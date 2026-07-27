@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Statistical Comparison Tool</title>
+<style>
+  :root{
+    --paper:#f6f3ec;
+    --paper-raised:#fffdf8;
+    --ink:#1c2b33;
+    --ink-soft:#5a6b73;
+    --rule:#d8d1c0;
+    --accent:#2f6f62;
+    --accent-soft:#e4ede9;
+    --sig:#2f6f62;
+    --nosig:#a3564a;
+    --nosig-soft:#f3e6e2;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Consolas, "Courier New", monospace;
+    --serif: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family: var(--serif);
+    padding: 40px 20px 120px;
+    line-height:1.5;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+  header.page{
+    border-bottom: 2px solid var(--ink);
+    padding-bottom:18px;
+    margin-bottom:36px;
+  }
+  header.page .eyebrow{
+    font-family: var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:8px;
+  }
+  header.page h1{
+    font-size:34px;
+    margin:0 0 6px;
+    font-weight:400;
+    letter-spacing:.01em;
+  }
+  header.page p{
+    margin:0;
+    color:var(--ink-soft);
+    font-size:15px;
+    max-width:640px;
+  }
+  .step{
+    background:var(--paper-raised);
+    border:1px solid var(--rule);
+    border-radius:2px;
+    margin-bottom:22px;
+    padding:26px 30px 30px;
+    opacity:0.35;
+    pointer-events:none;
+    filter:grayscale(0.4);
+    transition:opacity .35s ease, filter .35s ease;
+  }
+  .step.active{
+    opacity:1;
+    pointer-events:auto;
+    filter:none;
+  }
+  .step.done{
+    opacity:1;
+    pointer-events:auto;
+    filter:none;
+  }
+  .step-head{
+    display:flex;
+    align-items:baseline;
+    gap:14px;
+    margin-bottom:18px;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:14px;
+  }
+  .step-num{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--paper-raised);
+    background:var(--ink);
+    width:26px;height:26px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    flex:none;
+  }
+  .step.active .step-num, .step.done .step-num{background:var(--accent);}
+  .step-head h2{
+    font-size:20px;
+    font-weight:400;
+    margin:0;
+  }
+  .step-head .hint{
+    margin-left:auto;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+  label{
+    display:block;
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  input[type=text], input[type=number]{
+    font-family:var(--mono);
+    font-size:15px;
+    padding:9px 11px;
+    border:1px solid var(--rule);
+    background:#fff;
+    color:var(--ink);
+    border-radius:2px;
+    width:100%;
+  }
+  input:focus, button:focus, select:focus{
+    outline:2px solid var(--accent);
+    outline-offset:1px;
+  }
+  .row{display:flex; gap:16px; flex-wrap:wrap;}
+  .field{margin-bottom:16px;}
+  .field.n-field{max-width:220px;}
+  .field.dec-field{max-width:220px;}
+
+  table.models{width:100%; border-collapse:collapse; margin-bottom:14px;}
+  table.models th{
+    text-align:left;
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-soft);
+    border-bottom:1px solid var(--rule);
+    padding:6px 8px;
+  }
+  table.models td{
+    padding:6px 8px;
+    border-bottom:1px solid var(--rule);
+    vertical-align:middle;
+  }
+  table.models td input[type=text], table.models td input[type=number]{padding:7px 9px; font-size:14px;}
+  table.models td.rm{width:34px; text-align:center;}
+  table.models td.proposed-col{width:76px; text-align:center;}
+  .icon-btn{
+    background:none;border:1px solid var(--rule); color:var(--nosig);
+    width:28px;height:28px; border-radius:2px; cursor:pointer; font-size:14px; line-height:1;
+  }
+  .icon-btn:hover{background:var(--nosig-soft);}
+
+  button.primary{
+    font-family:var(--mono);
+    font-size:12.5px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    padding:12px 22px;
+    border-radius:2px;
+    cursor:pointer;
+  }
+  button.primary:hover{background:var(--accent);}
+  button.secondary{
+    font-family:var(--mono);
+    font-size:12.5px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    background:transparent;
+    color:var(--ink);
+    border:1px solid var(--ink);
+    padding:11px 20px;
+    border-radius:2px;
+    cursor:pointer;
+  }
+  button.secondary:hover{background:var(--accent-soft); border-color:var(--accent); color:var(--accent);}
+  button.ghost{
+    font-family:var(--mono);
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    background:none;
+    border:1px dashed var(--rule);
+    color:var(--ink-soft);
+    padding:8px 14px;
+    border-radius:2px;
+    cursor:pointer;
+  }
+  button.ghost:hover{border-color:var(--accent); color:var(--accent);}
+  button:disabled{opacity:.4; cursor:not-allowed;}
+
+  .actions{display:flex; gap:12px; margin-top:8px; align-items:center;}
+
+  .table-scroll{overflow-x:auto; border:1px solid var(--rule); border-radius:2px;}
+  .table-scroll:fullscreen{
+    background:var(--paper-raised); padding:28px; border:none; display:flex; align-items:flex-start;
+  }
+  .table-scroll:-webkit-full-screen{
+    background:var(--paper-raised); padding:28px; border:none;
+  }
+  .table-scroll:fullscreen table, .table-scroll:-webkit-full-screen table{
+    font-size:15px;
+  }
+  .table-scroll:fullscreen th, .table-scroll:fullscreen td,
+  .table-scroll:-webkit-full-screen th, .table-scroll:-webkit-full-screen td{
+    padding-top:13px; padding-bottom:13px;
+  }
+  .fullscreen-row{display:flex; justify-content:flex-end; margin-bottom:6px;}
+  table.data{border-collapse:collapse; width:100%; font-family:var(--mono); font-size:13px; min-width:520px;}
+  table.data th{
+    background:var(--ink); color:#fff; text-align:right; padding:8px 12px;
+    font-weight:400; letter-spacing:.02em; white-space:nowrap;
+  }
+  table.data th:first-child, table.data td:first-child{text-align:left;}
+  table.data td{padding:7px 12px; text-align:right; border-bottom:1px solid var(--rule); white-space:nowrap;}
+  table.data tr:nth-child(even) td{background:#faf8f2;}
+  table.data tfoot td{
+    font-weight:700; border-top:2px solid var(--ink); border-bottom:none;
+    background:var(--accent-soft) !important; color:var(--accent);
+  }
+
+  .confirm-block{
+    margin-top:20px;
+    padding-top:18px;
+    border-top:1px dashed var(--rule);
+  }
+  .confirm-block p{font-family:var(--mono); font-size:13px; margin:0 0 12px;}
+
+  .stats-table-wrap{margin-top:6px;}
+  table.stats{border-collapse:collapse; width:100%; font-family:var(--mono); font-size:12.5px; min-width:1000px;}
+  table.stats th{
+    background:var(--ink); color:#fff; padding:9px 10px; text-align:right; font-weight:400;
+    white-space:nowrap;
+  }
+  table.stats th:first-child, table.stats td:first-child{text-align:left;}
+  table.stats td:first-child{font-weight:700;}
+  table.stats td{padding:8px 10px; text-align:right; border-bottom:1px solid var(--rule); white-space:nowrap;}
+  table.stats tr:nth-child(even) td{background:#faf8f2;}
+  .sig-yes{color:var(--sig); font-weight:700;}
+  .sig-no{color:var(--nosig);}
+
+  table.formula-table{border-collapse:collapse; width:100%; font-size:13px; min-width:640px; margin-bottom:6px;}
+  table.formula-table th{
+    background:var(--ink); color:#fff; padding:9px 12px; text-align:left; font-weight:400;
+    font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+    white-space:nowrap;
+  }
+  table.formula-table td{padding:9px 12px; border-bottom:1px solid var(--rule); vertical-align:top; text-align:left;}
+  table.formula-table tr:nth-child(even) td{background:#faf8f2;}
+  table.formula-table td:first-child{font-weight:600; white-space:nowrap;}
+  table.formula-table code{
+    font-family:var(--mono); font-size:12.5px; color:var(--accent); background:var(--accent-soft);
+    padding:2px 6px; border-radius:2px; white-space:nowrap;
+  }
+
+  table.ci-se-ref-table{border-collapse:collapse; font-family:var(--mono); font-size:10.5px; color:var(--ink-soft); max-width:340px;}
+  table.ci-se-ref-table th{
+    background:transparent; color:var(--ink-soft); padding:3px 8px 3px 0; text-align:left; font-weight:600;
+    text-transform:uppercase; letter-spacing:.05em; font-size:9.5px; border-bottom:1px solid var(--rule);
+  }
+  table.ci-se-ref-table td{padding:2.5px 8px 2.5px 0; text-align:left; white-space:nowrap;}
+  table.ci-se-ref-table tr:nth-child(even) td{background:transparent;}
+
+  .mean-note{
+    font-family:var(--mono); font-size:11.5px; color:var(--ink-soft); margin-top:10px;
+  }
+  .divider-note{
+    font-family:var(--mono); font-size:11px; color:var(--ink-soft); margin:14px 0 4px;
+    text-transform:uppercase; letter-spacing:.06em;
+  }
+  .divider-note.highlight{
+    display:inline-block; font-size:13px; font-weight:700; color:var(--accent);
+    background:var(--accent-soft); padding:5px 12px; border-radius:2px; margin:18px 0 8px;
+    letter-spacing:.08em;
+  }
+  .error{
+    font-family:var(--mono); font-size:12px; color:var(--nosig); margin-top:8px;
+  }
+  footer.done-note{
+    text-align:center; font-family:var(--mono); font-size:11px; color:var(--ink-soft); margin-top:40px;
+  }
+  .download-row{display:flex; gap:12px; margin-top:22px; padding-top:20px; border-top:1px solid var(--rule);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div class="eyebrow">Paired-comparison significance testing</div>
+    <h1>Statistical Comparison Tool</h1>
+    <p>Generate realistic per-run results from reported mean accuracies, then run paired t-tests with Holm–Bonferroni correction against a proposed model.</p>
+  </header>
+
+  <!-- STEP 1 -->
+  <section class="step active" id="step1">
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <h2>Number of runs</h2>
+      <div class="hint">N per model</div>
+    </div>
+    <div class="field n-field">
+      <label for="nRuns">Runs (positive integer)</label>
+      <input type="number" id="nRuns" min="2" step="1" value="10" placeholder="e.g. 10">
+    </div>
+    <div class="error" id="nError"></div>
+    <div class="actions">
+      <button class="primary" id="toStep2">Continue to models →</button>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="step" id="step2">
+    <div class="step-head">
+      <div class="step-num">2</div>
+      <h2>Models &amp; mean accuracy</h2>
+      <div class="hint">Mark the proposed model</div>
+    </div>
+    <table class="models" id="modelTable">
+      <thead>
+        <tr>
+          <th>Model name</th>
+          <th>Mean accuracy (%)</th>
+          <th>Standard deviation</th>
+          <th class="proposed-col">Proposed</th>
+          <th class="rm"></th>
+        </tr>
+      </thead>
+      <tbody id="modelBody"></tbody>
+    </table>
+    <button class="ghost" id="addModel">+ Add model</button>
+    <div class="error" id="modelError"></div>
+    <div class="actions">
+      <button class="primary" id="toStep3">Continue to generation →</button>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="step" id="step3">
+    <div class="step-head">
+      <div class="step-num">3</div>
+      <h2>Generate runs</h2>
+      <div class="hint">Values match the mean exactly</div>
+    </div>
+    <p class="mean-note" style="margin-bottom:16px;">Draws N values per model from a normal distribution around each model's mean and SD, then rescales them so the sample mean and sample SD match exactly what you entered — then rounds and adjusts so the mean still matches exactly at the chosen precision.</p>
+    <div class="field dec-field">
+      <label for="decimals">Decimal places</label>
+      <input type="number" id="decimals" min="1" max="6" step="1" value="2">
+    </div>
+    <div class="actions">
+      <button class="primary" id="generateBtn">Generate runs</button>
+    </div>
+  </section>
+
+  <!-- STEP 4 -->
+  <section class="step" id="step4">
+    <div class="step-head">
+      <div class="step-num">4</div>
+      <h2>Preview runs</h2>
+      <div class="hint">Verify the mean row</div>
+    </div>
+    <div class="fullscreen-row">
+      <button class="ghost" onclick="toggleFullscreen('previewTableWrap')">⛶ Full screen</button>
+    </div>
+    <div class="table-scroll" id="previewTableWrap">
+      <table class="data" id="previewTable"></table>
+    </div>
+    <p class="mean-note">The final "Mean" row is computed directly from the generated values shown above, for verification against what you entered in Step 2.</p>
+
+    <div class="confirm-block">
+      <p>Are these generated runs acceptable?</p>
+      <div class="actions">
+        <button class="primary" id="acceptBtn">✔ Yes, use these runs</button>
+        <button class="secondary" id="regenBtn">↺ Regenerate</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 5 -->
+  <section class="step" id="step5">
+    <div class="step-head">
+      <div class="step-num">5</div>
+      <h2>Statistical analysis</h2>
+      <div class="hint">Proposed vs. every other model</div>
+    </div>
+
+    <div class="divider-note">Formulas used</div>
+    <div class="table-scroll">
+      <table class="formula-table">
+        <thead><tr><th>Metric</th><th>Formula</th></tr></thead>
+        <tbody>
+          <tr><td>Mean Difference</td><td><code>d̄ = mean(Aᵢ − Bᵢ)</code></td></tr>
+          <tr><td>Standard Deviation</td><td><code>s_d = sample SD of (Aᵢ − Bᵢ)</code></td></tr>
+          <tr><td>Confidence Interval (95%)</td><td><code>mean_B ± t₀.₉₇₅,df · SE_B</code></td></tr>
+          <tr><td>Standard Error</td><td><code>SE = s_d / √n</code></td></tr>
+          <tr><td>Degrees of Freedom</td><td><code>df = n − 1</code></td></tr>
+          <tr><td>Paired t-test</td><td><code>t = d̄ / SE</code></td></tr>
+          <tr><td>Raw p-value</td><td><code>p = 2 · P(T ≤ −|t|)</code>, T ~ Student's t with df degrees of freedom</td></tr>
+          <tr><td>Holm Threshold</td><td><code>α / (m − rank + 1)</code></td></tr>
+          <tr><td>Corrected P-value</td><td><code>max over j≤rank of (m − j + 1) · p₍j₎</code>, capped at 1</td></tr>
+          <tr><td>Effect Size (Cohen's d)</td><td><code>d = d̄ / s_d</code></td></tr>
+          <tr><td>Significant</td><td><code>Corrected p &lt; 0.05</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="divider-note highlight">Results</div>
+    <p class="mean-note" id="tValueNote"></p>
+    <div class="table-scroll" style="margin-bottom:16px;">
+      <table class="ci-se-ref-table" id="ciSeTable"></table>
+    </div>
+    <div class="fullscreen-row">
+      <button class="ghost" onclick="toggleFullscreen('statsTableWrap')">⛶ Full screen</button>
+    </div>
+    <div class="stats-table-wrap table-scroll" id="statsTableWrap">
+      <table class="stats" id="statsTable"></table>
+    </div>
+    <p class="mean-note">Significance is based on the Holm–Bonferroni corrected p-value (α = 0.05).</p>
+
+    <div class="download-row">
+      <button class="secondary" id="downloadWord">⇩ Download Full Report (.doc)</button>
+      <button class="secondary" id="downloadResultsOnly">⇩ Download Results Only (.doc)</button>
+      <button class="secondary" id="copyResults">⧉ Copy Results</button>
+    </div>
+  </section>
+
+  <footer class="done-note" id="doneNote" style="display:none;">— report ready —</footer>
+
+</div>
+
+<script>
+  function toggleFullscreen(id){
+    const el = document.getElementById(id);
+    const isFull = document.fullscreenElement || document.webkitFullscreenElement;
+    if(!isFull){
+      const req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if(req){
+        req.call(el).catch(()=>{ /* ignore: some browsers/contexts block fullscreen */ });
+      }
+    } else {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if(exit) exit.call(document);
+    }
+  }
+</script>
+<script>
+(function(){
+  "use strict";
+
+  // ---------- state ----------
+  let models = [
+    {name:"Proposed Model", mean:99.18, sd:0.15, proposed:true},
+    {name:"EfficientNetB4", mean:93.27, sd:0.30, proposed:false},
+    {name:"Swin Transformer", mean:94.82, sd:0.25, proposed:false}
+  ];
+  let N = 10;
+  let decimals = 2;
+  let generated = null;      // { modelName: [values...] }
+  let statsRows = null;
+
+  // ---------- helpers: math ----------
+  function boxMuller(){
+    let u=0,v=0;
+    while(u===0) u=Math.random();
+    while(v===0) v=Math.random();
+    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+  }
+
+  function mean(arr){ return arr.reduce((a,b)=>a+b,0)/arr.length; }
+  function sampleStd(arr){
+    const m = mean(arr);
+    const v = arr.reduce((s,x)=>s+(x-m)*(x-m),0)/(arr.length-1);
+    return Math.sqrt(v);
+  }
+
+  function lgamma(x){
+    const g=7;
+    const c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,
+      771.32342877765313,-176.61502916214059,12.507343278686905,
+      -0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+    if(x<0.5){
+      return Math.log(Math.PI/Math.sin(Math.PI*x)) - lgamma(1-x);
+    }
+    x-=1;
+    let a=c[0];
+    const t=x+g+0.5;
+    for(let i=1;i<g+2;i++) a+=c[i]/(x+i);
+    return 0.5*Math.log(2*Math.PI)+(x+0.5)*Math.log(t)-t+Math.log(a);
+  }
+
+  function betacf(x,a,b){
+    const MAXIT=200, EPS=3e-7, FPMIN=1e-30;
+    const qab=a+b, qap=a+1, qam=a-1;
+    let c=1, d=1-qab*x/qap;
+    if(Math.abs(d)<FPMIN) d=FPMIN;
+    d=1/d;
+    let h=d;
+    for(let m=1;m<=MAXIT;m++){
+      const m2=2*m;
+      let aa=m*(b-m)*x/((qam+m2)*(a+m2));
+      d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN;
+      c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN;
+      d=1/d; h*=d*c;
+      aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+      d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN;
+      c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN;
+      d=1/d;
+      const del=d*c; h*=del;
+      if(Math.abs(del-1)<EPS) break;
+    }
+    return h;
+  }
+
+  function betai(a,b,x){
+    if(x<=0) return 0;
+    if(x>=1) return 1;
+    const bt = Math.exp(lgamma(a+b)-lgamma(a)-lgamma(b)+a*Math.log(x)+b*Math.log(1-x));
+    if(x < (a+1)/(a+b+2)) return bt*betacf(x,a,b)/a;
+    return 1-bt*betacf(1-x,b,a)/b;
+  }
+
+  function twoTailedP(t, df){
+    const x = df/(df+t*t);
+    let p = betai(df/2, 0.5, x);
+    if(p<0) p=0; if(p>1) p=1;
+    return p;
+  }
+
+  // Inverse of the (two-tailed) Student's t distribution: returns the
+  // positive critical value t* such that twoTailedP(t*, df) === alpha.
+  // Equivalent to scipy.stats.t.ppf(1 - alpha/2, df). Solved by bisection
+  // since twoTailedP(t, df) is strictly decreasing in t for t >= 0.
+  function tCriticalTwoTailed(df, alpha){
+    let lo = 0, hi = 1000;
+    for(let i=0;i<100;i++){
+      const mid = (lo+hi)/2;
+      const p = twoTailedP(mid, df);
+      if(p > alpha) lo = mid; else hi = mid;
+    }
+    return (lo+hi)/2;
+  }
+
+  // ---------- exact-mean, exact-SD run generator ----------
+  // Mirrors the reference tool's approach: draw N values from a normal
+  // distribution around (mean, sd), then affinely rescale them so the
+  // sample mean and sample SD (ddof=1) exactly equal the requested values
+  // *before* rounding. After rounding to the chosen precision we still run
+  // the same integer sum-correction + de-duplication used previously, so the
+  // displayed mean matches exactly and no two runs are identical.
+  function generateRunsForMeanSD(meanVal, sdVal, n, dec){
+    const scale = Math.pow(10, dec);
+    const meanInt = Math.round(meanVal*scale);
+    const targetSum = meanInt*n;
+
+    // effective SD to draw from: fall back to a small realistic spread if the
+    // user entered 0 (otherwise every run would be identical pre-rounding).
+    const effSd = sdVal > 0 ? sdVal : Math.max(0.05, meanVal*0.004);
+
+    let raw = [];
+    for(let i=0;i<n;i++){
+      raw.push(meanVal + effSd*boxMuller());
+    }
+
+    // rescale so sample mean == meanVal and sample SD == effSd exactly
+    const currentMean = mean(raw);
+    const currentStd = sampleStd(raw);
+    let rescaled;
+    if(currentStd > 0){
+      rescaled = raw.map(v => (v-currentMean)/currentStd*effSd + meanVal);
+    } else {
+      rescaled = raw;
+    }
+
+    // convert to integer units at the chosen precision
+    let values = rescaled.map(v => Math.round(v*scale));
+
+    // force exact sum so the rounded mean matches exactly
+    let diff = targetSum - values.reduce((a,b)=>a+b,0);
+    let idxs = shuffleIndices(n);
+    let guard = 0, i = 0;
+    while(diff !== 0 && guard < 500000){
+      const idx = idxs[i % n];
+      if(diff>0){ values[idx]+=1; diff--; }
+      else { values[idx]-=1; diff++; }
+      i++; guard++;
+    }
+
+    values = deduplicate(values, n);
+
+    return values.map(v=>v/scale);
+  }
+
+  function shuffleIndices(n){
+    const arr = Array.from({length:n}, (_,i)=>i);
+    for(let i=arr.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]]=[arr[j],arr[i]];
+    }
+    return arr;
+  }
+
+  function deduplicate(values, n){
+    for(let pass=0; pass<80; pass++){
+      const seen = new Map();
+      let dupIdx = -1;
+      for(let i=0;i<values.length;i++){
+        if(seen.has(values[i])){ dupIdx = i; break; }
+        seen.set(values[i], i);
+      }
+      if(dupIdx===-1) break;
+      // nudge dupIdx by +1 and compensate a random *other* index by -1 to keep sum exact
+      let other = Math.floor(Math.random()*n);
+      let tries=0;
+      while(other===dupIdx && tries<10){ other=Math.floor(Math.random()*n); tries++; }
+      values[dupIdx]+=1;
+      values[other]-=1;
+    }
+    return values;
+  }
+
+  // ---------- Holm-Bonferroni ----------
+  function holmCorrect(rows, alpha){
+    const m = rows.length;
+    const sorted = rows.slice().sort((a,b)=>a.rawP-b.rawP);
+    let runningMax = 0;
+    sorted.forEach((row, i)=>{
+      const rank = i+1;
+      const threshold = alpha/(m-rank+1);
+      const adjusted = (m-rank+1)*row.rawP;
+      runningMax = Math.max(runningMax, adjusted);
+      const correctedP = Math.min(runningMax, 1);
+      row.holmThreshold = threshold;
+      row.correctedP = correctedP;
+      row.significant = correctedP < 0.05;
+    });
+    return rows;
+  }
+
+  // ================= UI WIRING =================
+
+  const stepEls = {
+    1: document.getElementById('step1'),
+    2: document.getElementById('step2'),
+    3: document.getElementById('step3'),
+    4: document.getElementById('step4'),
+    5: document.getElementById('step5')
+  };
+
+  function activateStep(n){
+    for(let k=1;k<=5;k++){
+      stepEls[k].classList.remove('active');
+    }
+    stepEls[n].classList.add('active');
+    stepEls[n].scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  function markDone(n){ stepEls[n].classList.add('done'); }
+  function lockFrom(n){
+    for(let k=n;k<=5;k++){
+      stepEls[k].classList.remove('done');
+      if(k!==n) stepEls[k].classList.remove('active');
+    }
+  }
+
+  // ---- Step 1 ----
+  const nRunsInput = document.getElementById('nRuns');
+  const nError = document.getElementById('nError');
+  document.getElementById('toStep2').addEventListener('click', ()=>{
+    const val = parseInt(nRunsInput.value, 10);
+    if(!Number.isInteger(val) || val < 2){
+      nError.textContent = 'Enter a positive integer of at least 2.';
+      return;
+    }
+    nError.textContent = '';
+    N = val;
+    markDone(1);
+    activateStep(2);
+  });
+
+  // ---- Step 2 ----
+  const modelBody = document.getElementById('modelBody');
+  const modelError = document.getElementById('modelError');
+
+  function renderModels(){
+    modelBody.innerHTML = '';
+    models.forEach((m, idx)=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="text" data-idx="${idx}" class="mName" value="${escapeHtml(m.name)}" placeholder="Model name"></td>
+        <td><input type="number" step="any" data-idx="${idx}" class="mMean" value="${m.mean}" placeholder="e.g. 95.44"></td>
+        <td><input type="number" step="any" min="0" data-idx="${idx}" class="mSd" value="${m.sd}" placeholder="e.g. 0.20"></td>
+        <td class="proposed-col"><input type="radio" name="proposedRadio" data-idx="${idx}" ${m.proposed ? 'checked':''}></td>
+        <td class="rm">${models.length>2 ? `<button class="icon-btn" data-idx="${idx}" title="Remove">✕</button>`:''}</td>
+      `;
+      modelBody.appendChild(tr);
+    });
+    modelBody.querySelectorAll('.mName').forEach(el=>{
+      el.addEventListener('input', e=>{ models[+e.target.dataset.idx].name = e.target.value; });
+    });
+    modelBody.querySelectorAll('.mMean').forEach(el=>{
+      el.addEventListener('input', e=>{ models[+e.target.dataset.idx].mean = parseFloat(e.target.value); });
+    });
+    modelBody.querySelectorAll('.mSd').forEach(el=>{
+      el.addEventListener('input', e=>{ models[+e.target.dataset.idx].sd = parseFloat(e.target.value); });
+    });
+    modelBody.querySelectorAll('input[name=proposedRadio]').forEach(el=>{
+      el.addEventListener('change', e=>{
+        models.forEach((m,i)=>{ m.proposed = (i===+e.target.dataset.idx); });
+      });
+    });
+    modelBody.querySelectorAll('.icon-btn').forEach(el=>{
+      el.addEventListener('click', e=>{
+        const idx = +e.target.dataset.idx;
+        const wasProposed = models[idx].proposed;
+        models.splice(idx,1);
+        if(wasProposed && models.length) models[0].proposed = true;
+        renderModels();
+      });
+    });
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  document.getElementById('addModel').addEventListener('click', ()=>{
+    models.push({name:`Model ${models.length+1}`, mean:90, sd:0.2, proposed:false});
+    renderModels();
+  });
+
+  document.getElementById('toStep3').addEventListener('click', ()=>{
+    const names = models.map(m=>m.name.trim());
+    if(names.some(n=>!n)){ modelError.textContent = 'Every model needs a name.'; return; }
+    if(new Set(names).size !== names.length){ modelError.textContent = 'Model names must be unique.'; return; }
+    if(models.some(m=>isNaN(m.mean))){ modelError.textContent = 'Every model needs a numeric mean accuracy.'; return; }
+    if(models.some(m=>isNaN(m.sd) || m.sd < 0)){ modelError.textContent = 'Every model needs a valid, non-negative standard deviation.'; return; }
+    if(!models.some(m=>m.proposed)){ modelError.textContent = 'Mark exactly one model as the proposed model.'; return; }
+    if(models.length < 2){ modelError.textContent = 'Add at least one comparison model besides the proposed model.'; return; }
+    modelError.textContent = '';
+    markDone(2);
+    activateStep(3);
+  });
+
+  // ---- Step 3: generate ----
+  const decimalsInput = document.getElementById('decimals');
+  document.getElementById('generateBtn').addEventListener('click', ()=>{
+    decimals = Math.min(6, Math.max(1, parseInt(decimalsInput.value,10) || 2));
+    runGeneration();
+    markDone(3);
+    renderPreview();
+    activateStep(4);
+  });
+
+  function runGeneration(){
+    generated = {};
+    models.forEach(m=>{
+      generated[m.name] = generateRunsForMeanSD(m.mean, m.sd, N, decimals);
+    });
+  }
+
+  // ---- Step 4: preview ----
+  function renderPreview(){
+    const table = document.getElementById('previewTable');
+    let thead = '<thead><tr><th>Run</th>' + models.map(m=>`<th>${escapeHtml(m.name)}</th>`).join('') + '</tr></thead>';
+    let rows = '';
+    for(let r=0;r<N;r++){
+      rows += `<tr><td>${r+1}</td>` + models.map(m=>`<td>${generated[m.name][r].toFixed(decimals)}</td>`).join('') + '</tr>';
+    }
+    let meanRow = '<tr><td>Mean</td>' + models.map(m=>{
+      const computedMean = mean(generated[m.name]);
+      return `<td>${computedMean.toFixed(decimals)}</td>`;
+    }).join('') + '</tr>';
+    let sdRow = '<tr><td>Std Dev</td>' + models.map(m=>{
+      const arr = generated[m.name];
+      const computedSd = arr.length>1 ? sampleStd(arr) : 0;
+      return `<td>${computedSd.toFixed(decimals)}</td>`;
+    }).join('') + '</tr>';
+    let tfoot = '<tfoot>' + meanRow + sdRow + '</tfoot>';
+    table.innerHTML = thead + '<tbody>'+rows+'</tbody>' + tfoot;
+  }
+
+  document.getElementById('regenBtn').addEventListener('click', ()=>{
+    runGeneration();
+    renderPreview();
+  });
+
+  document.getElementById('acceptBtn').addEventListener('click', ()=>{
+    markDone(4);
+    runStats();
+    activateStep(5);
+    document.getElementById('doneNote').style.display = 'block';
+  });
+
+  // ---- Step 5: stats ----
+  function runStats(){
+    const proposed = models.find(m=>m.proposed);
+    const others = models.filter(m=>!m.proposed);
+    const proposedVals = generated[proposed.name];
+
+    const rows = others.map(m=>{
+      const otherVals = generated[m.name];
+      const diffs = proposedVals.map((v,i)=>v-otherVals[i]);
+      const n = diffs.length;
+      const meanDiff = mean(diffs);
+      const sd = sampleStd(diffs);
+      const se = sd/Math.sqrt(n);
+      const df = n-1;
+      const t = meanDiff/se;
+      const rawP = twoTailedP(t, df);
+      const cohend = meanDiff/sd;
+
+      // 95% confidence interval on the *compared* model's own mean accuracy
+      // (not the proposed model, not the paired difference): mean ± t.ppf(0.975, n-1) * SE,
+      // using that comparison model's own generated runs.
+      const otherN = otherVals.length;
+      const otherMean = mean(otherVals);
+      const otherSd = sampleStd(otherVals);
+      const otherSe = otherSd/Math.sqrt(otherN);
+      const otherDf = otherN-1;
+      const otherTCrit = tCriticalTwoTailed(otherDf, 0.05);
+      const ciLower = otherMean - otherTCrit*otherSe;
+      const ciUpper = otherMean + otherTCrit*otherSe;
+
+      return {
+        comparison: `${proposed.name} vs. ${m.name}`,
+        meanDiff, sd, se, df, t, rawP, cohend, ciLower, ciUpper,
+        ciSe: otherSe, ciTCrit: otherTCrit
+      };
+    });
+
+    statsRows = holmCorrect(rows, 0.05);
+    renderStats();
+  }
+
+  function fmt(v, d){ return Number(v).toFixed(d); }
+  function fmtP(v){
+    // Show the exact calculated value rather than an inequality cap.
+    // Very small p-values are shown in scientific notation (e.g. 5.0097e-25);
+    // larger ones as a fixed-decimal number.
+    if(v === 0) return '0';
+    if(v < 0.0001) return v.toExponential(4);
+    return v.toFixed(6);
+  }
+
+  function renderStats(){
+    const table = document.getElementById('statsTable');
+    const ciDf = N - 1;
+    const ciTCrit = tCriticalTwoTailed(ciDf, 0.05);
+    document.getElementById('tValueNote').textContent =
+      `95% CI critical value: t\u2080.\u2089\u2087\u2085 = ${ciTCrit.toFixed(6)} (df = N \u2212 1 = ${ciDf}, based on ${N} runs per model).`;
+
+    // Small reference table (on-screen only, not included in either download):
+    // each compared model's own standard error, used in its CI above.
+    const seTable = document.getElementById('ciSeTable');
+    let seThead = '<thead><tr><th>Model</th><th>Standard Error (used for its CI)</th></tr></thead>';
+    let seRows = statsRows.map(r=>{
+      const modelName = r.comparison.split(' vs. ')[1];
+      return `<tr><td>${escapeHtml(modelName)}</td><td>${fmt(r.ciSe, 6)}</td></tr>`;
+    }).join('');
+    seTable.innerHTML = seThead + '<tbody>'+seRows+'</tbody>';
+
+    const headCols = ['Comparison','Mean Difference','Standard Deviation','Confidence Interval (95%)','Standard Error','Degrees of Freedom',
+      'Paired t-test (t)','Raw p-value','Holm Threshold','Corrected P-value',"Effect Size (Cohen's d)",'Significant'];
+    let thead = '<thead><tr>' + headCols.map(h=>`<th>${h}</th>`).join('') + '</tr></thead>';
+    let rows = statsRows.map(r=>{
+      const sigClass = r.significant ? 'sig-yes' : 'sig-no';
+      const sigText = r.significant ? 'YES' : 'NO';
+      return `<tr>
+        <td>${escapeHtml(r.comparison)}</td>
+        <td>${fmt(r.meanDiff, decimals)}</td>
+        <td>${fmt(r.sd, 6)}</td>
+        <td>[${fmt(r.ciLower, 6)}, ${fmt(r.ciUpper, 6)}]</td>
+        <td>${fmt(r.se, 6)}</td>
+        <td>${r.df}</td>
+        <td>${fmt(r.t, 6)}</td>
+        <td>${fmtP(r.rawP)}</td>
+        <td>${fmt(r.holmThreshold, 6)}</td>
+        <td>${fmtP(r.correctedP)}</td>
+        <td>${fmt(r.cohend, 6)}</td>
+        <td class="${sigClass}">${sigText}</td>
+      </tr>`;
+    }).join('');
+    table.innerHTML = thead + '<tbody>'+rows+'</tbody>';
+  }
+
+  // ---- Download Word (.doc) ----
+  document.getElementById('downloadWord').addEventListener('click', ()=>{
+    const proposed = models.find(m=>m.proposed);
+    let html = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head><meta charset="utf-8"><title>Statistical Comparison Report</title>
+    <style>
+      body{font-family:'Times New Roman', Times, serif; font-size:11pt;}
+      h1{font-size:18pt;} h2{font-size:14pt; margin-top:24pt;}
+      table{border-collapse:collapse; width:100%; margin-top:8pt;}
+      th,td{border:1px solid #999; padding:4pt 8pt; font-size:10pt; text-align:right;}
+      th{background:#1c2b33; color:#fff;}
+      td:first-child, th:first-child{text-align:left;}
+      .meta{color:#555; font-size:10pt;}
+    </style></head><body>
+    <h1>Statistical Comparison Report</h1>
+    <p class="meta">Proposed model: ${escapeHtml(proposed.name)} &nbsp;|&nbsp; Runs per model: ${N} &nbsp;|&nbsp; Decimal places: ${decimals}</p>
+
+    <h2>Reported Mean Accuracies</h2>
+    <table><tr><th>Model</th><th>Mean Accuracy (%)</th><th>Standard Deviation</th></tr>
+    ${models.map(m=>`<tr><td>${escapeHtml(m.name)}${m.proposed?' (Proposed)':''}</td><td>${m.mean.toFixed(decimals)}</td><td>${m.sd.toFixed(decimals)}</td></tr>`).join('')}
+    </table>
+
+    <h2>Generated Runs</h2>
+    <table>
+    <tr><th>Run</th>${models.map(m=>`<th>${escapeHtml(m.name)}</th>`).join('')}</tr>
+    ${Array.from({length:N},(_,r)=>`<tr><td>${r+1}</td>${models.map(m=>`<td>${generated[m.name][r].toFixed(decimals)}</td>`).join('')}</tr>`).join('')}
+    <tr><td><b>Mean</b></td>${models.map(m=>`<td><b>${mean(generated[m.name]).toFixed(decimals)}</b></td>`).join('')}</tr>
+    <tr><td><b>Std Dev</b></td>${models.map(m=>`<td><b>${sampleStd(generated[m.name]).toFixed(decimals)}</b></td>`).join('')}</tr>
+    </table>
+
+    <h2>Pairwise Statistical Comparison</h2>
+    <p class="meta">95% CI critical value: t(0.975) = ${tCriticalTwoTailed(N-1,0.05).toFixed(6)} (df = N - 1 = ${N-1}, based on ${N} runs per model).</p>
+    <table>
+    <tr><th>Comparison</th><th>Mean Difference</th><th>Standard Deviation</th><th>Confidence Interval (95%)</th><th>Standard Error</th><th>Degrees of Freedom</th><th>Paired t-test (t)</th><th>Raw p-value</th><th>Holm Threshold</th><th>Corrected P-value</th><th>Effect Size (Cohen's d)</th><th>Significant</th></tr>
+    ${statsRows.map(r=>`<tr>
+      <td>${escapeHtml(r.comparison)}</td>
+      <td>${fmt(r.meanDiff, decimals)}</td>
+      <td>${fmt(r.sd, 6)}</td>
+      <td>[${fmt(r.ciLower, 6)}, ${fmt(r.ciUpper, 6)}]</td>
+      <td>${fmt(r.se, 6)}</td>
+      <td>${r.df}</td>
+      <td>${fmt(r.t,6)}</td>
+      <td>${fmtP(r.rawP)}</td>
+      <td>${fmt(r.holmThreshold,6)}</td>
+      <td>${fmtP(r.correctedP)}</td>
+      <td>${fmt(r.cohend,6)}</td>
+      <td>${r.significant ? 'YES' : 'NO'}</td>
+    </tr>`).join('')}
+    </table>
+    </body></html>`;
+
+    const blob = new Blob(['\ufeff', html], {type:'application/msword'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'statistical_comparison_report.doc';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // ---- Download Word (.doc) - results table only, styled to match the reference document ----
+  document.getElementById('downloadResultsOnly').addEventListener('click', ()=>{
+    const proposed = models.find(m=>m.proposed);
+    let html = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head><meta charset="utf-8"><title>Statistical Comparison Results</title>
+    <style>
+      body{font-family:'Times New Roman', Times, serif; font-size:11pt; color:#000;}
+      table{border-collapse:collapse; width:100%;}
+      th,td{border:1px solid #000; padding:4pt 8pt; font-size:11pt; text-align:center;}
+      th{font-weight:700;}
+    </style></head><body>
+    <p>95% CI critical value: t(0.975) = ${tCriticalTwoTailed(N-1,0.05).toFixed(6)} (df = N - 1 = ${N-1}, based on ${N} runs per model).</p>
+    <table>
+    <tr>
+      <th>Comparison</th>
+      <th>Mean Difference</th>
+      <th>Standard Deviation</th>
+      <th>Confidence Interval (95%)</th>
+      <th>Standard Error</th>
+      <th>Degrees of Freedom</th>
+      <th>Paired t-test (t)</th>
+      <th>Raw p-value</th>
+      <th>Holm's Threshold</th>
+      <th>Corrected P-Value</th>
+      <th>Effect Size (Cohen's d)</th>
+      <th>Significant</th>
+    </tr>
+    ${statsRows.map(r=>`<tr>
+      <td><b>${escapeHtml(r.comparison)}</b></td>
+      <td><b>${fmt(r.meanDiff, decimals)}</b></td>
+      <td>${fmt(r.sd, 6)}</td>
+      <td>[${fmt(r.ciLower, 6)}, ${fmt(r.ciUpper, 6)}]</td>
+      <td>${fmt(r.se, 6)}</td>
+      <td>${r.df}</td>
+      <td>${fmt(r.t,6)}</td>
+      <td>${fmtP(r.rawP)}</td>
+      <td>${fmt(r.holmThreshold,6)}</td>
+      <td>${fmtP(r.correctedP)}</td>
+      <td>${fmt(r.cohend,6)}</td>
+      <td>${r.significant ? 'YES' : 'NO'}</td>
+    </tr>`).join('')}
+    </table>
+    </body></html>`;
+
+    const blob = new Blob(['\ufeff', html], {type:'application/msword'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'statistical_comparison_results.doc';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // ---- Copy Results (clipboard) ----
+  // Builds the same results table with every style attribute inlined (rather
+  // than relying on a <style> block), since pasting into Word/other editors
+  // only reliably preserves inline styles from copied HTML.
+  function buildResultsTableInlineHTML(){
+    const cellStyle = "border:1px solid #000;padding:4pt 8pt;font-size:11pt;text-align:center;font-family:'Times New Roman',Times,serif;background-color:#ffffff;color:#000000;";
+    const thStyle = cellStyle + "font-weight:700;";
+    const boldTdStyle = cellStyle + "font-weight:700;";
+    const headerCols = ['Comparison','Mean Difference','Standard Deviation','Confidence Interval (95%)','Standard Error',
+      'Degrees of Freedom','Paired t-test (t)','Raw p-value',"Holm's Threshold",'Corrected P-Value',"Effect Size (Cohen's d)",'Significant'];
+    const thead = '<tr>' + headerCols.map(h=>`<th style="${thStyle}">${h}</th>`).join('') + '</tr>';
+    const rows = statsRows.map(r=>`<tr style="background-color:#ffffff;">
+      <td style="${boldTdStyle}">${escapeHtml(r.comparison)}</td>
+      <td style="${boldTdStyle}">${fmt(r.meanDiff, decimals)}</td>
+      <td style="${cellStyle}">${fmt(r.sd, 6)}</td>
+      <td style="${cellStyle}">[${fmt(r.ciLower, 6)}, ${fmt(r.ciUpper, 6)}]</td>
+      <td style="${cellStyle}">${fmt(r.se, 6)}</td>
+      <td style="${cellStyle}">${r.df}</td>
+      <td style="${cellStyle}">${fmt(r.t,6)}</td>
+      <td style="${cellStyle}">${fmtP(r.rawP)}</td>
+      <td style="${cellStyle}">${fmt(r.holmThreshold,6)}</td>
+      <td style="${cellStyle}">${fmtP(r.correctedP)}</td>
+      <td style="${cellStyle}">${fmt(r.cohend,6)}</td>
+      <td style="${cellStyle}">${r.significant ? 'YES' : 'NO'}</td>
+    </tr>`).join('');
+    return `<table style="border-collapse:collapse;width:100%;background-color:#ffffff;">${thead}${rows}</table>`;
+  }
+
+  function buildResultsTablePlainText(){
+    const headerCols = ['Comparison','Mean Difference','Standard Deviation','Confidence Interval (95%)','Standard Error',
+      'Degrees of Freedom','Paired t-test (t)','Raw p-value',"Holm's Threshold",'Corrected P-Value',"Effect Size (Cohen's d)",'Significant'];
+    const lines = statsRows.map(r=>[
+      r.comparison, fmt(r.meanDiff, decimals), fmt(r.sd, 6), `[${fmt(r.ciLower, 6)}, ${fmt(r.ciUpper, 6)}]`,
+      fmt(r.se, 6), r.df, fmt(r.t,6), fmtP(r.rawP), fmt(r.holmThreshold,6), fmtP(r.correctedP), fmt(r.cohend,6),
+      r.significant ? 'YES' : 'NO'
+    ].join('\t'));
+    return headerCols.join('\t') + '\n' + lines.join('\n');
+  }
+
+  document.getElementById('copyResults').addEventListener('click', async ()=>{
+    const btn = document.getElementById('copyResults');
+    if(!statsRows || !statsRows.length){
+      btn.textContent = 'No results yet';
+      setTimeout(()=>{ btn.textContent = '⧉ Copy Results'; }, 1500);
+      return;
+    }
+    const tableHtml = buildResultsTableInlineHTML();
+    const plainText = buildResultsTablePlainText();
+
+    try{
+      if(navigator.clipboard && window.ClipboardItem){
+        const htmlBlob = new Blob([tableHtml], {type:'text/html'});
+        const textBlob = new Blob([plainText], {type:'text/plain'});
+        await navigator.clipboard.write([new ClipboardItem({'text/html': htmlBlob, 'text/plain': textBlob})]);
+      } else {
+        throw new Error('Clipboard API unavailable');
+      }
+      btn.textContent = '✔ Copied!';
+    } catch(err){
+      // Fallback for browsers/contexts that block navigator.clipboard.write:
+      // build a temporary contenteditable node, select it, and use execCommand('copy').
+      try{
+        const tmp = document.createElement('div');
+        tmp.contentEditable = 'true';
+        tmp.style.position = 'fixed';
+        tmp.style.left = '-9999px';
+        tmp.style.background = '#ffffff';
+        tmp.innerHTML = tableHtml;
+        document.body.appendChild(tmp);
+        const range = document.createRange();
+        range.selectNodeContents(tmp);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        document.execCommand('copy');
+        sel.removeAllRanges();
+        document.body.removeChild(tmp);
+        btn.textContent = '✔ Copied!';
+      } catch(err2){
+        btn.textContent = 'Copy failed';
+      }
+    }
+    setTimeout(()=>{ btn.textContent = '⧉ Copy Results'; }, 1800);
+  });
+
+  // ---- init ----
+  renderModels();
+})();
+</script>
+</body>
+</html>
