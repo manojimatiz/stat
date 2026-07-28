@@ -276,13 +276,15 @@
   .mathrow sup{ font-size:0.68em; position:relative; top:-0.6em; }
   .mathrow sub{ font-size:0.68em; position:relative; top:0.35em; }
 
-  table.ci-se-ref-table{border-collapse:collapse; font-family:var(--mono); font-size:10.5px; color:var(--ink-soft); max-width:340px;}
+  table.ci-se-ref-table{border-collapse:collapse; font-family:var(--mono); font-size:12px; color:var(--ink); max-width:640px;}
   table.ci-se-ref-table th{
-    background:transparent; color:var(--ink-soft); padding:3px 8px 3px 0; text-align:left; font-weight:600;
-    text-transform:uppercase; letter-spacing:.05em; font-size:9.5px; border-bottom:1px solid var(--rule);
+    background:var(--ink); color:#fff; padding:8px 12px; text-align:left; font-weight:400;
+    text-transform:uppercase; letter-spacing:.05em; font-size:10.5px; white-space:nowrap;
   }
-  table.ci-se-ref-table td{padding:2.5px 8px 2.5px 0; text-align:left; white-space:nowrap;}
-  table.ci-se-ref-table tr:nth-child(even) td{background:transparent;}
+  table.ci-se-ref-table td{padding:7px 12px; text-align:left; white-space:nowrap; border-bottom:1px solid var(--rule);}
+  table.ci-se-ref-table tr:nth-child(even) td{background:#faf8f2;}
+  table.ci-se-ref-table td:first-child{font-weight:700;}
+  table.ci-se-ref-table tr.proposed-row td{color:var(--accent);}
 
   .mean-note{
     font-family:var(--mono); font-size:11.5px; color:var(--ink-soft); margin-top:10px;
@@ -428,7 +430,11 @@
 
     <div class="divider-note highlight">Results</div>
     <p class="mean-note" id="tValueNote"></p>
-    <div class="table-scroll" style="margin-bottom:16px;">
+    <div class="fullscreen-row" style="justify-content:space-between; align-items:center;">
+      <span class="mean-note" style="margin:0;">Model summary (mean, SD, 95% CI, SE)</span>
+      <button class="ghost" id="copyModelSummary">⧉ Copy</button>
+    </div>
+    <div class="table-scroll" style="margin-bottom:16px; display:inline-block; width:auto; max-width:100%;">
       <table class="ci-se-ref-table" id="ciSeTable"></table>
     </div>
     <div class="fullscreen-row">
@@ -479,6 +485,7 @@
   let decimals = 2;
   let generated = null;      // { modelName: [values...] }
   let statsRows = null;
+  let modelSummaryRows = null;
 
   // ---------- helpers: math ----------
   function boxMuller(){
@@ -849,6 +856,24 @@
     });
 
     statsRows = holmCorrect(rows, 0.05);
+
+    // Full model summary (Method / Mean / SD / 95% CI), for every model
+    // including the proposed one — each computed from that model's own
+    // generated runs: mean ± t.ppf(0.975, n-1) * (SD/√n).
+    modelSummaryRows = models.map(m=>{
+      const vals = generated[m.name];
+      const n = vals.length;
+      const mv = mean(vals);
+      const sdv = sampleStd(vals);
+      const sev = sdv/Math.sqrt(n);
+      const dfv = n-1;
+      const tcv = tCriticalTwoTailed(dfv, 0.05);
+      return {
+        name: m.name, isProposed: !!m.proposed,
+        mean: mv, sd: sdv, se: sev, ciLower: mv - tcv*sev, ciUpper: mv + tcv*sev
+      };
+    });
+
     renderStats();
   }
 
@@ -869,13 +894,15 @@
     document.getElementById('tValueNote').textContent =
       `95% CI critical value: t\u2080.\u2089\u2087\u2085 = ${ciTCrit.toFixed(6)} (df = N \u2212 1 = ${ciDf}, based on ${N} runs per model).`;
 
-    // Small reference table (on-screen only, not included in either download):
-    // each compared model's own standard error, used in its CI above.
+    // Model summary table (on-screen only, not included in Full Report/Results
+    // Only downloads by default — has its own separate Copy button): each
+    // model's own mean, SD, standard error, and 95% CI from its own runs.
     const seTable = document.getElementById('ciSeTable');
-    let seThead = '<thead><tr><th>Model</th><th>Standard Error (used for its CI)</th></tr></thead>';
-    let seRows = statsRows.map(r=>{
-      const modelName = r.comparison.split(' vs. ')[1];
-      return `<tr><td>${escapeHtml(modelName)}</td><td>${fmt(r.ciSe, 6)}</td></tr>`;
+    let seThead = '<thead><tr><th>Method</th><th>Mean</th><th>SD</th><th>95% CI</th><th>Standard Error (used for its CI)</th></tr></thead>';
+    let seRows = modelSummaryRows.map(r=>{
+      const label = r.isProposed ? `${escapeHtml(r.name)} (Proposed)` : escapeHtml(r.name);
+      const rowClass = r.isProposed ? ' class="proposed-row"' : '';
+      return `<tr${rowClass}><td>${label}</td><td>${fmt(r.mean, decimals)}</td><td>${fmt(r.sd, decimals)}</td><td>[${fmt(r.ciLower, decimals)}, ${fmt(r.ciUpper, decimals)}]</td><td>${fmt(r.se, 6)}</td></tr>`;
     }).join('');
     seTable.innerHTML = seThead + '<tbody>'+seRows+'</tbody>';
 
@@ -914,7 +941,7 @@
       h1{font-size:18pt;} h2{font-size:14pt; margin-top:24pt;}
       table{border-collapse:collapse; width:100%; margin-top:8pt;}
       th,td{border:1px solid #999; padding:4pt 8pt; font-size:10pt; text-align:right;}
-      th{background:#1c2b33; color:#fff;}
+      th{font-weight:700;}
       td:first-child, th:first-child{text-align:left;}
       .meta{color:#555; font-size:10pt;}
     </style></head><body>
@@ -936,9 +963,9 @@
 
     <h2>Pairwise Statistical Comparison</h2>
     <p class="meta">95% CI critical value: t(0.975) = ${tCriticalTwoTailed(N-1,0.05).toFixed(6)} (df = N - 1 = ${N-1}, based on ${N} runs per model).</p>
-    <table style="width:auto; margin-bottom:14pt;">
-    <tr><th>Model</th><th>Standard Error (used for its CI)</th></tr>
-    ${statsRows.map(r=>`<tr><td>${escapeHtml(r.comparison.split(' vs. ')[1])}</td><td>${fmt(r.ciSe, 6)}</td></tr>`).join('')}
+    <table style="margin-bottom:14pt;">
+    <tr><th>Method</th><th>Mean</th><th>SD</th><th>95% CI</th><th>Standard Error (used for its CI)</th></tr>
+    ${modelSummaryRows.map(r=>`<tr><td>${escapeHtml(r.name)}${r.isProposed?' (Proposed)':''}</td><td>${fmt(r.mean, decimals)}</td><td>${fmt(r.sd, decimals)}</td><td>[${fmt(r.ciLower, decimals)}, ${fmt(r.ciUpper, decimals)}]</td><td>${fmt(r.se, 6)}</td></tr>`).join('')}
     </table>
     <table>
     <tr><th>Comparison</th><th>Mean Difference</th><th>Standard Deviation</th><th>Confidence Interval (95%)</th><th>Standard Error</th><th>Degrees of Freedom</th><th>Paired t-test (t)</th><th>Raw p-value</th><th>Holm Threshold</th><th>Corrected P-value</th><th>Effect Size (Cohen's d)</th><th>Significant</th></tr>
@@ -983,6 +1010,10 @@
       th{font-weight:700;}
     </style></head><body>
     <p>95% CI critical value: t(0.975) = ${tCriticalTwoTailed(N-1,0.05).toFixed(6)} (df = N - 1 = ${N-1}, based on ${N} runs per model).</p>
+    <table style="margin-bottom:14pt;">
+    <tr><th>Method</th><th>Mean</th><th>SD</th><th>95% CI</th><th>Standard Error (used for its CI)</th></tr>
+    ${modelSummaryRows.map(r=>`<tr><td>${escapeHtml(r.name)}${r.isProposed?' (Proposed)':''}</td><td>${fmt(r.mean, decimals)}</td><td>${fmt(r.sd, decimals)}</td><td>[${fmt(r.ciLower, decimals)}, ${fmt(r.ciUpper, decimals)}]</td><td>${fmt(r.se, 6)}</td></tr>`).join('')}
+    </table>
     <table>
     <tr>
       <th>Comparison</th>
@@ -1065,6 +1096,36 @@
     return headerCols.join('\t') + '\n' + lines.join('\n');
   }
 
+  // Same inline-styled, white-background, Times New Roman format as the
+  // main Copy Results table, applied to the Method/Mean/SD/95% CI summary.
+  function buildModelSummaryInlineHTML(){
+    const cellStyle = "border:1px solid #000;padding:4pt 8pt;font-size:11pt;text-align:center;font-family:'Times New Roman',Times,serif;background-color:#ffffff;color:#000000;";
+    const thStyle = cellStyle + "font-weight:700;";
+    const boldTdStyle = cellStyle + "font-weight:700;";
+    const headerCols = ['Method','Mean','SD','95% CI','Standard Error (used for its CI)'];
+    const thead = '<tr>' + headerCols.map(h=>`<th style="${thStyle}">${h}</th>`).join('') + '</tr>';
+    const rows = modelSummaryRows.map(r=>{
+      const label = r.isProposed ? `${escapeHtml(r.name)} (Proposed)` : escapeHtml(r.name);
+      return `<tr style="background-color:#ffffff;">
+      <td style="${boldTdStyle}">${label}</td>
+      <td style="${cellStyle}">${fmt(r.mean, decimals)}</td>
+      <td style="${cellStyle}">${fmt(r.sd, decimals)}</td>
+      <td style="${cellStyle}">[${fmt(r.ciLower, decimals)}, ${fmt(r.ciUpper, decimals)}]</td>
+      <td style="${cellStyle}">${fmt(r.se, 6)}</td>
+    </tr>`;
+    }).join('');
+    return `<table style="border-collapse:collapse;width:100%;background-color:#ffffff;">${thead}${rows}</table>`;
+  }
+
+  function buildModelSummaryPlainText(){
+    const headerCols = ['Method','Mean','SD','95% CI','Standard Error (used for its CI)'];
+    const lines = modelSummaryRows.map(r=>{
+      const label = r.isProposed ? `${r.name} (Proposed)` : r.name;
+      return [label, fmt(r.mean, decimals), fmt(r.sd, decimals), `[${fmt(r.ciLower, decimals)}, ${fmt(r.ciUpper, decimals)}]`, fmt(r.se, 6)].join('\t');
+    });
+    return headerCols.join('\t') + '\n' + lines.join('\n');
+  }
+
   document.getElementById('copyResults').addEventListener('click', async ()=>{
     const btn = document.getElementById('copyResults');
     if(!statsRows || !statsRows.length){
@@ -1109,6 +1170,50 @@
       }
     }
     setTimeout(()=>{ btn.textContent = '⧉ Copy Results'; }, 1800);
+  });
+
+  document.getElementById('copyModelSummary').addEventListener('click', async ()=>{
+    const btn = document.getElementById('copyModelSummary');
+    if(!modelSummaryRows || !modelSummaryRows.length){
+      btn.textContent = 'No results yet';
+      setTimeout(()=>{ btn.textContent = '⧉ Copy'; }, 1500);
+      return;
+    }
+    const tableHtml = buildModelSummaryInlineHTML();
+    const plainText = buildModelSummaryPlainText();
+
+    try{
+      if(navigator.clipboard && window.ClipboardItem){
+        const htmlBlob = new Blob([tableHtml], {type:'text/html'});
+        const textBlob = new Blob([plainText], {type:'text/plain'});
+        await navigator.clipboard.write([new ClipboardItem({'text/html': htmlBlob, 'text/plain': textBlob})]);
+      } else {
+        throw new Error('Clipboard API unavailable');
+      }
+      btn.textContent = '✔ Copied!';
+    } catch(err){
+      try{
+        const tmp = document.createElement('div');
+        tmp.contentEditable = 'true';
+        tmp.style.position = 'fixed';
+        tmp.style.left = '-9999px';
+        tmp.style.background = '#ffffff';
+        tmp.innerHTML = tableHtml;
+        document.body.appendChild(tmp);
+        const range = document.createRange();
+        range.selectNodeContents(tmp);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        document.execCommand('copy');
+        sel.removeAllRanges();
+        document.body.removeChild(tmp);
+        btn.textContent = '✔ Copied!';
+      } catch(err2){
+        btn.textContent = 'Copy failed';
+      }
+    }
+    setTimeout(()=>{ btn.textContent = '⧉ Copy'; }, 1800);
   });
 
   // ---- init ----
