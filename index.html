@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Statistical Comparison Tool</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <style>
   :root{
     --paper:#f6f3ec;
@@ -257,13 +259,13 @@
     font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em;
     white-space:nowrap;
   }
-  table.formula-table td{padding:9px 12px; border-bottom:1px solid var(--rule); vertical-align:top; text-align:left;}
+  table.formula-table td{padding:12px 14px; border-bottom:1px solid var(--rule); vertical-align:middle; text-align:left;}
   table.formula-table tr:nth-child(even) td{background:#faf8f2;}
   table.formula-table td:first-child{font-weight:600; white-space:nowrap;}
-  table.formula-table code{
-    font-family:var(--mono); font-size:12.5px; color:var(--accent); background:var(--accent-soft);
-    padding:2px 6px; border-radius:2px; white-space:nowrap;
+  table.formula-table .formula-note{
+    font-family:var(--serif); font-size:12px; color:var(--ink-soft); margin-left:10px;
   }
+  table.formula-table .katex{ font-size:1.1em; color:var(--ink); }
 
   table.ci-se-ref-table{border-collapse:collapse; font-family:var(--mono); font-size:10.5px; color:var(--ink-soft); max-width:340px;}
   table.ci-se-ref-table th{
@@ -400,17 +402,17 @@
       <table class="formula-table">
         <thead><tr><th>Metric</th><th>Formula</th></tr></thead>
         <tbody>
-          <tr><td>Mean Difference</td><td><code>d̄ = mean(Aᵢ − Bᵢ)</code></td></tr>
-          <tr><td>Standard Deviation</td><td><code>s_d = sample SD of (Aᵢ − Bᵢ)</code></td></tr>
-          <tr><td>Confidence Interval (95%)</td><td><code>mean_B ± t₀.₉₇₅,df · SE_B</code></td></tr>
-          <tr><td>Standard Error</td><td><code>SE = s_d / √n</code></td></tr>
-          <tr><td>Degrees of Freedom</td><td><code>df = n − 1</code></td></tr>
-          <tr><td>Paired t-test</td><td><code>t = d̄ / SE</code></td></tr>
-          <tr><td>Raw p-value</td><td><code>p = 2 · P(T ≤ −|t|)</code>, T ~ Student's t with df degrees of freedom</td></tr>
-          <tr><td>Holm Threshold</td><td><code>α / (m − rank + 1)</code></td></tr>
-          <tr><td>Corrected P-value</td><td><code>max over j≤rank of (m − j + 1) · p₍j₎</code>, capped at 1</td></tr>
-          <tr><td>Effect Size (Cohen's d)</td><td><code>d = d̄ / s_d</code></td></tr>
-          <tr><td>Significant</td><td><code>Corrected p &lt; 0.05</code></td></tr>
+          <tr><td>Mean Difference</td><td><span class="tex-formula" data-tex="\bar{d} = \dfrac{1}{n}\sum_{i=1}^{n}(A_i - B_i)"></span></td></tr>
+          <tr><td>Standard Deviation</td><td><span class="tex-formula" data-tex="SD = \sqrt{\dfrac{\sum_{i=1}^{n}(d_i-\bar{d})^2}{n-1}}"></span></td></tr>
+          <tr><td>Confidence Interval (95%)</td><td><span class="tex-formula" data-tex="CI = \bar{x} \pm t_{\alpha/2,\,n-1} \times SE"></span></td></tr>
+          <tr><td>Standard Error</td><td><span class="tex-formula" data-tex="SE = \dfrac{SD}{\sqrt{n}}"></span></td></tr>
+          <tr><td>Degrees of Freedom</td><td><span class="tex-formula" data-tex="df = n - 1"></span></td></tr>
+          <tr><td>Paired t-test</td><td><span class="tex-formula" data-tex="t = \dfrac{\bar{d}}{SE}"></span></td></tr>
+          <tr><td>Raw p-value</td><td><span class="tex-formula" data-tex="p = 2 \times P(T \le -|t|)"></span><span class="formula-note">T ~ Student's t-distribution, df degrees of freedom</span></td></tr>
+          <tr><td>Holm Threshold</td><td><span class="tex-formula" data-tex="\dfrac{\alpha}{m - rank + 1}"></span></td></tr>
+          <tr><td>Corrected P-value</td><td><span class="tex-formula" data-tex="\max_{j \le rank}\big[(m-j+1)\,p_{(j)}\big]"></span><span class="formula-note">capped at 1</span></td></tr>
+          <tr><td>Effect Size (Cohen's d)</td><td><span class="tex-formula" data-tex="d = \dfrac{\bar{d}}{SD}"></span></td></tr>
+          <tr><td>Significant</td><td><span class="tex-formula" data-tex="\text{Corrected } p < 0.05"></span></td></tr>
         </tbody>
       </table>
     </div>
@@ -1098,6 +1100,23 @@
 
   // ---- init ----
   renderModels();
+
+  function renderFormulas(){
+    if(typeof katex === 'undefined') return;
+    document.querySelectorAll('.tex-formula').forEach(el=>{
+      try{
+        katex.render(el.dataset.tex, el, {throwOnError:false});
+      }catch(e){ el.textContent = el.dataset.tex; }
+    });
+  }
+  if(document.readyState === 'complete' || document.readyState === 'interactive'){
+    renderFormulas();
+  } else {
+    document.addEventListener('DOMContentLoaded', renderFormulas);
+  }
+  // KaTeX is loaded via an external <script> tag; if it hasn't finished
+  // loading yet by the time this runs, retry shortly after.
+  window.addEventListener('load', renderFormulas);
 })();
 </script>
 </body>
