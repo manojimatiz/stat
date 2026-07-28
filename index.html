@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Statistical Comparison Tool</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <style>
   :root{
     --paper:#f6f3ec;
@@ -265,7 +263,18 @@
   table.formula-table .formula-note{
     font-family:var(--serif); font-size:12px; color:var(--ink-soft); margin-left:10px;
   }
-  table.formula-table .katex{ font-size:1.1em; color:var(--ink); }
+
+  /* Pure-CSS math notation (no external library, works fully offline) */
+  .mathrow{ font-family:'Cambria Math', Cambria, Georgia, serif; font-size:15px; color:var(--ink); display:inline-flex; align-items:center; gap:2px; flex-wrap:wrap; }
+  .mathrow i{ font-style:italic; }
+  .frac{ display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 4px; font-size:0.95em; line-height:1.15; }
+  .frac .num{ padding:0 4px 2px; border-bottom:1.4px solid currentColor; }
+  .frac .den{ padding:2px 4px 0; }
+  .sqrt{ display:inline-flex; align-items:flex-start; margin:0 2px; }
+  .sqrt-symbol{ font-size:1.25em; line-height:1; margin-right:1px; transform:translateY(1px); }
+  .sqrt-content{ border-top:1.4px solid currentColor; padding:2px 3px 0; }
+  .mathrow sup{ font-size:0.68em; position:relative; top:-0.6em; }
+  .mathrow sub{ font-size:0.68em; position:relative; top:0.35em; }
 
   table.ci-se-ref-table{border-collapse:collapse; font-family:var(--mono); font-size:10.5px; color:var(--ink-soft); max-width:340px;}
   table.ci-se-ref-table th{
@@ -402,17 +411,17 @@
       <table class="formula-table">
         <thead><tr><th>Metric</th><th>Formula</th></tr></thead>
         <tbody>
-          <tr><td>Mean Difference</td><td><span class="tex-formula" data-tex="\bar{d} = \dfrac{1}{n}\sum_{i=1}^{n}(A_i - B_i)"></span></td></tr>
-          <tr><td>Standard Deviation</td><td><span class="tex-formula" data-tex="SD = \sqrt{\dfrac{\sum_{i=1}^{n}(d_i-\bar{d})^2}{n-1}}"></span></td></tr>
-          <tr><td>Confidence Interval (95%)</td><td><span class="tex-formula" data-tex="CI = \bar{x} \pm t_{\alpha/2,\,n-1} \times SE"></span></td></tr>
-          <tr><td>Standard Error</td><td><span class="tex-formula" data-tex="SE = \dfrac{SD}{\sqrt{n}}"></span></td></tr>
-          <tr><td>Degrees of Freedom</td><td><span class="tex-formula" data-tex="df = n - 1"></span></td></tr>
-          <tr><td>Paired t-test</td><td><span class="tex-formula" data-tex="t = \dfrac{\bar{d}}{SE}"></span></td></tr>
-          <tr><td>Raw p-value</td><td><span class="tex-formula" data-tex="p = 2 \times P(T \le -|t|)"></span><span class="formula-note">T ~ Student's t-distribution, df degrees of freedom</span></td></tr>
-          <tr><td>Holm Threshold</td><td><span class="tex-formula" data-tex="\dfrac{\alpha}{m - rank + 1}"></span></td></tr>
-          <tr><td>Corrected P-value</td><td><span class="tex-formula" data-tex="\max_{j \le rank}\big[(m-j+1)\,p_{(j)}\big]"></span><span class="formula-note">capped at 1</span></td></tr>
-          <tr><td>Effect Size (Cohen's d)</td><td><span class="tex-formula" data-tex="d = \dfrac{\bar{d}}{SD}"></span></td></tr>
-          <tr><td>Significant</td><td><span class="tex-formula" data-tex="\text{Corrected } p < 0.05"></span></td></tr>
+          <tr><td>Mean Difference</td><td><span class="mathrow"><i>d̄</i> = <span class="frac"><span class="num">1</span><span class="den">n</span></span>&Sigma;<sub>i=1</sub><sup>n</sup>(A<sub>i</sub> &minus; B<sub>i</sub>)</span></td></tr>
+          <tr><td>Standard Deviation</td><td><span class="mathrow">SD = <span class="sqrt"><span class="sqrt-symbol">&radic;</span><span class="sqrt-content"><span class="frac"><span class="num">&Sigma;<sub>i=1</sub><sup>n</sup>(d<sub>i</sub> &minus; d̄)<sup>2</sup></span><span class="den">n &minus; 1</span></span></span></span></span></td></tr>
+          <tr><td>Confidence Interval (95%)</td><td><span class="mathrow">CI = x̄ &plusmn; t<sub>&alpha;/2, n&minus;1</sub> &times; SE</span></td></tr>
+          <tr><td>Standard Error</td><td><span class="mathrow">SE = <span class="frac"><span class="num">SD</span><span class="den">&radic;n</span></span></span></td></tr>
+          <tr><td>Degrees of Freedom</td><td><span class="mathrow">df = n &minus; 1</span></td></tr>
+          <tr><td>Paired t-test</td><td><span class="mathrow">t = <span class="frac"><span class="num">d̄</span><span class="den">SE</span></span></span></td></tr>
+          <tr><td>Raw p-value</td><td><span class="mathrow">p = 2 &times; P(T &le; &minus;|t|)</span><span class="formula-note">T ~ Student's t-distribution, df degrees of freedom</span></td></tr>
+          <tr><td>Holm Threshold</td><td><span class="mathrow"><span class="frac"><span class="num">&alpha;</span><span class="den">m &minus; rank + 1</span></span></span></td></tr>
+          <tr><td>Corrected P-value</td><td><span class="mathrow">max<sub>j&le;rank</sub> [(m&minus;j+1) &middot; p<sub>(j)</sub>]</span><span class="formula-note">capped at 1</span></td></tr>
+          <tr><td>Effect Size (Cohen's d)</td><td><span class="mathrow">d = <span class="frac"><span class="num">d̄</span><span class="den">SD</span></span></span></td></tr>
+          <tr><td>Significant</td><td><span class="mathrow">Corrected p &lt; 0.05</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -927,6 +936,10 @@
 
     <h2>Pairwise Statistical Comparison</h2>
     <p class="meta">95% CI critical value: t(0.975) = ${tCriticalTwoTailed(N-1,0.05).toFixed(6)} (df = N - 1 = ${N-1}, based on ${N} runs per model).</p>
+    <table style="width:auto; margin-bottom:14pt;">
+    <tr><th>Model</th><th>Standard Error (used for its CI)</th></tr>
+    ${statsRows.map(r=>`<tr><td>${escapeHtml(r.comparison.split(' vs. ')[1])}</td><td>${fmt(r.ciSe, 6)}</td></tr>`).join('')}
+    </table>
     <table>
     <tr><th>Comparison</th><th>Mean Difference</th><th>Standard Deviation</th><th>Confidence Interval (95%)</th><th>Standard Error</th><th>Degrees of Freedom</th><th>Paired t-test (t)</th><th>Raw p-value</th><th>Holm Threshold</th><th>Corrected P-value</th><th>Effect Size (Cohen's d)</th><th>Significant</th></tr>
     ${statsRows.map(r=>`<tr>
@@ -1100,23 +1113,6 @@
 
   // ---- init ----
   renderModels();
-
-  function renderFormulas(){
-    if(typeof katex === 'undefined') return;
-    document.querySelectorAll('.tex-formula').forEach(el=>{
-      try{
-        katex.render(el.dataset.tex, el, {throwOnError:false});
-      }catch(e){ el.textContent = el.dataset.tex; }
-    });
-  }
-  if(document.readyState === 'complete' || document.readyState === 'interactive'){
-    renderFormulas();
-  } else {
-    document.addEventListener('DOMContentLoaded', renderFormulas);
-  }
-  // KaTeX is loaded via an external <script> tag; if it hasn't finished
-  // loading yet by the time this runs, retry shortly after.
-  window.addEventListener('load', renderFormulas);
 })();
 </script>
 </body>
