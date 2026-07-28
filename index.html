@@ -217,7 +217,7 @@
   .table-scroll:-webkit-full-screen th, .table-scroll:-webkit-full-screen td{
     padding-top:13px; padding-bottom:13px;
   }
-  .fullscreen-row{display:flex; justify-content:flex-end; margin-bottom:6px;}
+  .fullscreen-row{display:flex; justify-content:flex-end; gap:10px; margin-bottom:6px;}
   table.data{border-collapse:collapse; width:100%; font-family:var(--mono); font-size:13px; min-width:520px;}
   table.data th{
     background:var(--ink); color:#fff; text-align:right; padding:8px 12px;
@@ -439,6 +439,7 @@
     </div>
     <div class="fullscreen-row">
       <button class="ghost" onclick="toggleFullscreen('statsTableWrap')">⛶ Full screen</button>
+      <button class="ghost" id="copyResults">⧉ Copy Results</button>
     </div>
     <div class="stats-table-wrap table-scroll" id="statsTableWrap">
       <table class="stats" id="statsTable"></table>
@@ -448,7 +449,6 @@
     <div class="download-row">
       <button class="secondary" id="downloadWord">⇩ Download Full Report (.doc)</button>
       <button class="secondary" id="downloadResultsOnly">⇩ Download Results Only (.doc)</button>
-      <button class="secondary" id="copyResults">⧉ Copy Results</button>
     </div>
   </section>
 
