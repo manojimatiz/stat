@@ -906,7 +906,7 @@
     }).join('');
     seTable.innerHTML = seThead + '<tbody>'+seRows+'</tbody>';
 
-    const headCols = ['Comparison','Mean Difference','Standard Deviation','Confidence Interval (95%)','Standard Error','Degrees of Freedom',
+    const headCols = ['Comparison','Mean Difference','Standard Deviation','Standard Error','Degrees of Freedom',
       'Paired t-test (t)','Raw p-value','Holm Threshold','Corrected P-value',"Effect Size (Cohen's d)",'Significant'];
     let thead = '<thead><tr>' + headCols.map(h=>`<th>${h}</th>`).join('') + '</tr></thead>';
     let rows = statsRows.map(r=>{
@@ -916,7 +916,6 @@
         <td>${escapeHtml(r.comparison)}</td>
         <td>${fmt(r.meanDiff, decimals)}</td>
         <td>${fmt(r.sd, 6)}</td>
-        <td>[${fmt(r.ciLower, 6)}, ${fmt(r.ciUpper, 6)}]</td>
         <td>${fmt(r.se, 6)}</td>
         <td>${r.df}</td>
         <td>${fmt(r.t, 6)}</td>
@@ -968,12 +967,11 @@
     ${modelSummaryRows.map(r=>`<tr><td>${escapeHtml(r.name)}${r.isProposed?' (Proposed)':''}</td><td>${fmt(r.mean, decimals)}</td><td>${fmt(r.sd, decimals)}</td><td>[${fmt(r.ciLower, decimals)}, ${fmt(r.ciUpper, decimals)}]</td><td>${fmt(r.se, 6)}</td></tr>`).join('')}
     </table>
     <table>
-    <tr><th>Comparison</th><th>Mean Difference</th><th>Standard Deviation</th><th>Confidence Interval (95%)</th><th>Standard Error</th><th>Degrees of Freedom</th><th>Paired t-test (t)</th><th>Raw p-value</th><th>Holm Threshold</th><th>Corrected P-value</th><th>Effect Size (Cohen's d)</th><th>Significant</th></tr>
+    <tr><th>Comparison</th><th>Mean Difference</th><th>Standard Deviation</th><th>Standard Error</th><th>Degrees of Freedom</th><th>Paired t-test (t)</th><th>Raw p-value</th><th>Holm Threshold</th><th>Corrected P-value</th><th>Effect Size (Cohen's d)</th><th>Significant</th></tr>
     ${statsRows.map(r=>`<tr>
       <td>${escapeHtml(r.comparison)}</td>
       <td>${fmt(r.meanDiff, decimals)}</td>
       <td>${fmt(r.sd, 6)}</td>
-      <td>[${fmt(r.ciLower, 6)}, ${fmt(r.ciUpper, 6)}]</td>
       <td>${fmt(r.se, 6)}</td>
       <td>${r.df}</td>
       <td>${fmt(r.t,6)}</td>
@@ -1019,7 +1017,6 @@
       <th>Comparison</th>
       <th>Mean Difference</th>
       <th>Standard Deviation</th>
-      <th>Confidence Interval (95%)</th>
       <th>Standard Error</th>
       <th>Degrees of Freedom</th>
       <th>Paired t-test (t)</th>
@@ -1033,7 +1030,6 @@
       <td><b>${escapeHtml(r.comparison)}</b></td>
       <td><b>${fmt(r.meanDiff, decimals)}</b></td>
       <td>${fmt(r.sd, 6)}</td>
-      <td>[${fmt(r.ciLower, 6)}, ${fmt(r.ciUpper, 6)}]</td>
       <td>${fmt(r.se, 6)}</td>
       <td>${r.df}</td>
       <td>${fmt(r.t,6)}</td>
@@ -1065,14 +1061,13 @@
     const cellStyle = "border:1px solid #000;padding:4pt 8pt;font-size:11pt;text-align:center;font-family:'Times New Roman',Times,serif;background-color:#ffffff;color:#000000;";
     const thStyle = cellStyle + "font-weight:700;";
     const boldTdStyle = cellStyle + "font-weight:700;";
-    const headerCols = ['Comparison','Mean Difference','Standard Deviation','Confidence Interval (95%)','Standard Error',
+    const headerCols = ['Comparison','Mean Difference','Standard Deviation','Standard Error',
       'Degrees of Freedom','Paired t-test (t)','Raw p-value',"Holm's Threshold",'Corrected P-Value',"Effect Size (Cohen's d)",'Significant'];
     const thead = '<tr>' + headerCols.map(h=>`<th style="${thStyle}">${h}</th>`).join('') + '</tr>';
     const rows = statsRows.map(r=>`<tr style="background-color:#ffffff;">
       <td style="${boldTdStyle}">${escapeHtml(r.comparison)}</td>
       <td style="${boldTdStyle}">${fmt(r.meanDiff, decimals)}</td>
       <td style="${cellStyle}">${fmt(r.sd, 6)}</td>
-      <td style="${cellStyle}">[${fmt(r.ciLower, 6)}, ${fmt(r.ciUpper, 6)}]</td>
       <td style="${cellStyle}">${fmt(r.se, 6)}</td>
       <td style="${cellStyle}">${r.df}</td>
       <td style="${cellStyle}">${fmt(r.t,6)}</td>
@@ -1086,10 +1081,10 @@
   }
 
   function buildResultsTablePlainText(){
-    const headerCols = ['Comparison','Mean Difference','Standard Deviation','Confidence Interval (95%)','Standard Error',
+    const headerCols = ['Comparison','Mean Difference','Standard Deviation','Standard Error',
       'Degrees of Freedom','Paired t-test (t)','Raw p-value',"Holm's Threshold",'Corrected P-Value',"Effect Size (Cohen's d)",'Significant'];
     const lines = statsRows.map(r=>[
-      r.comparison, fmt(r.meanDiff, decimals), fmt(r.sd, 6), `[${fmt(r.ciLower, 6)}, ${fmt(r.ciUpper, 6)}]`,
+      r.comparison, fmt(r.meanDiff, decimals), fmt(r.sd, 6),
       fmt(r.se, 6), r.df, fmt(r.t,6), fmtP(r.rawP), fmt(r.holmThreshold,6), fmtP(r.correctedP), fmt(r.cohend,6),
       r.significant ? 'YES' : 'NO'
     ].join('\t'));
