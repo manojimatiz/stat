@@ -415,7 +415,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     </div>
 
     <div class="error" id="modelError"></div>
-    <div class="actions">
+    <div class="actions" id="step2ContinueRow">
       <button class="primary" id="toStep3">Continue to generation →</button>
     </div>
   </section>
@@ -855,11 +855,14 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
   const modePasteBtn = document.getElementById('modePasteBtn');
   const modeManualLabel = document.getElementById('modeManualLabel');
   const modePasteLabel = document.getElementById('modePasteLabel');
+  const step2ContinueRow = document.getElementById('step2ContinueRow');
 
   function showEntryMode(mode){
     const isPaste = mode === 'paste';
     manualEntryPanel.style.display = isPaste ? 'none' : 'block';
     pasteImportPanel.style.display = isPaste ? 'block' : 'none';
+    step2ContinueRow.style.display = isPaste ? 'none' : 'flex';
+    modelError.textContent = isPaste ? '' : modelError.textContent;
     modeManualBtn.checked = !isPaste;
     modePasteBtn.checked = isPaste;
     modeManualLabel.classList.toggle('active', !isPaste);
