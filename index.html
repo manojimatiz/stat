@@ -334,6 +334,21 @@
   }
   .toast-close:hover{ opacity:1; }
   @keyframes toast-in{ from{opacity:0; transform:translateY(-12px);} to{opacity:1; transform:translateY(0);} }
+
+  .modal-overlay{
+    display:none; position:fixed; inset:0; z-index:10000;
+    background:rgba(28,43,51,0.55); align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-overlay.visible{ display:flex; }
+  .modal-box{
+    background:var(--paper-raised); border:1px solid var(--rule); border-radius:2px;
+    max-width:520px; width:100%; padding:30px 32px; box-shadow:0 20px 60px rgba(0,0,0,.35);
+    animation: toast-in .2s ease;
+  }
+  .modal-icon{ font-size:26px; color:var(--nosig); margin-bottom:6px; }
+  .modal-title{ font-family:var(--serif); font-size:20px; font-weight:400; margin:0 0 12px; }
+  .modal-msg{ font-family:var(--mono); font-size:13px; color:var(--ink-soft); line-height:1.6; margin:0 0 24px; white-space:pre-line; }
+  .modal-actions{ display:flex; gap:12px; flex-wrap:wrap; }
   footer.done-note{
     text-align:center; font-family:var(--mono); font-size:11px; color:var(--ink-soft); margin-top:40px;
   }
@@ -342,6 +357,17 @@
 </head>
 <body>
 <div class="toast-container" id="toastContainer"></div>
+<div class="modal-overlay" id="confirmModalOverlay">
+  <div class="modal-box">
+    <div class="modal-icon">⚠</div>
+    <h3 class="modal-title">Proposed model isn't ahead</h3>
+    <p class="modal-msg" id="confirmModalMsg"></p>
+    <div class="modal-actions">
+      <button class="secondary" id="confirmModalBack">← Go back and review</button>
+      <button class="primary" id="confirmModalContinue">Continue anyway</button>
+    </div>
+  </div>
+</div>
 <div class="wrap">
 
   <header class="page">
@@ -574,6 +600,31 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     toast.appendChild(msg);
     toast.appendChild(closeBtn);
     container.appendChild(toast);
+  }
+
+  // ---------- confirmation modal (blocks proceeding until acknowledged) ----------
+  function showConfirmModal(title, message){
+    return new Promise(resolve=>{
+      const overlay = document.getElementById('confirmModalOverlay');
+      const msgEl = document.getElementById('confirmModalMsg');
+      const titleEl = overlay.querySelector('.modal-title');
+      const backBtn = document.getElementById('confirmModalBack');
+      const continueBtn = document.getElementById('confirmModalContinue');
+      titleEl.textContent = title;
+      msgEl.textContent = message;
+      overlay.classList.add('visible');
+
+      function cleanup(result){
+        overlay.classList.remove('visible');
+        backBtn.removeEventListener('click', onBack);
+        continueBtn.removeEventListener('click', onContinue);
+        resolve(result);
+      }
+      function onBack(){ cleanup(false); }
+      function onContinue(){ cleanup(true); }
+      backBtn.addEventListener('click', onBack);
+      continueBtn.addEventListener('click', onContinue);
+    });
   }
 
   // ---------- helpers: math ----------
@@ -890,6 +941,16 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     }
     nError.textContent = '';
     N = val;
+
+    // Soft warning only — low N is statistically valid but weak (small df,
+    // large SE, results easily swung by a single run). Doesn't block progress.
+    if(N < 5){
+      showToast(
+        `N = ${N} gives low statistical power (df = ${N-1}) — the t-test, CI, and ` +
+        `significance results will be very sensitive to individual runs. Consider using at least 5-10 runs if possible.`
+      );
+    }
+
     markDone(1);
     activateStep(2);
   });
@@ -904,7 +965,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><input type="text" data-idx="${idx}" class="mName" value="${escapeHtml(m.name)}" placeholder="Model name"></td>
-        <td><input type="number" step="any" data-idx="${idx}" class="mMean" value="${m.mean}" placeholder="e.g. 95.44"></td>
+        <td><input type="number" step="any" min="0" max="100" data-idx="${idx}" class="mMean" value="${m.mean}" placeholder="e.g. 95.44"></td>
         <td><input type="number" step="any" min="0" data-idx="${idx}" class="mSd" value="${m.sd}" placeholder="e.g. 0.20"></td>
         <td class="proposed-col"><input type="radio" name="proposedRadio" data-idx="${idx}" ${m.proposed ? 'checked':''}></td>
         <td class="rm">${models.length>2 ? `<button class="icon-btn" data-idx="${idx}" title="Remove">✕</button>`:''}</td>
@@ -1016,11 +1077,12 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       return;
     }
     const newModels = [];
-    let skipped = 0;
+    let skipped = 0, outOfRange = 0;
     lines.forEach(line=>{
       const parsed = parsePastedLine(line);
       if(parsed && parsed.name && !isNaN(parsed.mean) && !isNaN(parsed.sd)){
         newModels.push({ name: parsed.name, mean: parsed.mean, sd: parsed.sd, proposed:false });
+        if(parsed.mean < 0 || parsed.mean > 100) outOfRange++;
       } else {
         skipped++;
       }
@@ -1032,22 +1094,76 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       pasteImportError.textContent = '';
       showEntryMode('manual');
       modelError.style.color = 'var(--accent)';
-      modelError.textContent = `Imported ${newModels.length} model${newModels.length===1?'':'s'} (replaced previous list).` + (skipped>0 ? ` Skipped ${skipped} line${skipped===1?'':'s'} that couldn't be parsed.` : '') + ' Mark one as Proposed below.';
+      modelError.textContent = `Imported ${newModels.length} model${newModels.length===1?'':'s'} (replaced previous list).` +
+        (skipped>0 ? ` Skipped ${skipped} line${skipped===1?'':'s'} that couldn't be parsed.` : '') +
+        (outOfRange>0 ? ` ${outOfRange} imported mean${outOfRange===1?'':'s'} ${outOfRange===1?'is':'are'} outside 0-100 and will need fixing.` : '') +
+        ' Mark one as Proposed below.';
+
+      // Same validation warnings as manual entry, surfaced immediately for
+      // pasted data too rather than only at the later "Continue" click.
+      const outOfRangeNames = newModels.filter(m => m.mean < 0 || m.mean > 100).map(m => m.name);
+      if(outOfRangeNames.length){
+        showToast(`Mean accuracy must be between 0 and 100. Fix: ${outOfRangeNames.join(', ')}.`);
+      }
+      const extremeSdNames = newModels
+        .filter(m => m.mean >= 0 && m.mean <= 100 && m.sd > Math.min(m.mean, 100 - m.mean))
+        .map(m => m.name);
+      if(extremeSdNames.length){
+        showToast(
+          `SD is large relative to how close the mean is to 0%/100% for: ${extremeSdNames.join(', ')}. ` +
+          `Generated runs will be clamped to a valid accuracy range, so the achieved SD may come out noticeably lower than entered.`
+        );
+      }
     } else {
       pasteImportError.style.color = '';
       pasteImportError.textContent = `Couldn't parse any lines. Expected format: "Model Name<TAB or spaces>Mean ± SD" (one per line).`;
     }
   });
 
-  document.getElementById('toStep3').addEventListener('click', ()=>{
+  document.getElementById('toStep3').addEventListener('click', async ()=>{
     const names = models.map(m=>m.name.trim());
     if(names.some(n=>!n)){ const msg='Every model needs a name.'; modelError.textContent=msg; showToast(msg); return; }
     if(new Set(names).size !== names.length){ const msg='Model names must be unique.'; modelError.textContent=msg; showToast(msg); return; }
     if(models.some(m=>isNaN(m.mean))){ const msg='Every model needs a numeric mean accuracy.'; modelError.textContent=msg; showToast(msg); return; }
+    if(models.some(m=>m.mean < 0 || m.mean > 100)){ const msg='Mean accuracy must be between 0 and 100.'; modelError.textContent=msg; showToast(msg); return; }
     if(models.some(m=>isNaN(m.sd) || m.sd < 0)){ const msg='Every model needs a valid, non-negative standard deviation.'; modelError.textContent=msg; showToast(msg); return; }
     if(!models.some(m=>m.proposed)){ const msg='Mark exactly one model as the proposed model.'; modelError.textContent=msg; showToast(msg); return; }
     if(models.length < 2){ const msg='Add at least one comparison model besides the proposed model.'; modelError.textContent=msg; showToast(msg); return; }
     modelError.textContent = '';
+
+    // Soft warning only — SD large relative to how close the mean is to the
+    // 0%/100% boundary means the generated runs will be heavily compressed
+    // by clamping (achieved SD will come out well below what was entered).
+    const extremeSdModels = models
+      .filter(m => m.sd > Math.min(m.mean, 100 - m.mean))
+      .map(m => m.name);
+    if(extremeSdModels.length){
+      showToast(
+        `SD is large relative to how close the mean is to 0%/100% for: ${extremeSdModels.join(', ')}. ` +
+        `Generated runs will be clamped to a valid accuracy range, so the achieved SD may come out noticeably lower than entered.`
+      );
+    }
+
+    // Check the proposed model's entered mean against every baseline's
+    // entered mean BEFORE generating any runs — no point running the full
+    // pipeline if the premise (proposed should beat the baselines) doesn't hold.
+    const proposed = models.find(m=>m.proposed);
+    const notBeaten = models
+      .filter(m=>!m.proposed)
+      .filter(m=> m.mean >= proposed.mean)
+      .map(m=>`${m.name} (${m.mean.toFixed(decimals)} vs. proposed ${proposed.mean.toFixed(decimals)})`);
+
+    if(notBeaten.length){
+      const proceed = await showConfirmModal(
+        "Proposed model isn't ahead",
+        `Your proposed model ("${proposed.name}") does not have a higher mean accuracy than:\n\n` +
+        notBeaten.map(s=>'• ' + s).join('\n') +
+        `\n\nA significant result in this case would mean the proposed model is significantly WORSE, not better — ` +
+        `so there may be no point proceeding unless that's intentional. Continue anyway, or go back and review your models/means?`
+      );
+      if(!proceed) return; // stay on Step 2 so the user can adjust
+    }
+
     markDone(2);
     activateStep(3);
   });
