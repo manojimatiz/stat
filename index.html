@@ -658,17 +658,49 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     return (lo+hi)/2;
   }
 
-  // ---------- exact-mean, exact-SD run generator ----------
+  // ---------- exact-mean, exact-SD run generator (bounded to valid accuracy range) ----------
   // Mirrors the reference tool's approach: draw N values from a normal
   // distribution around (mean, sd), then affinely rescale them so the
   // sample mean and sample SD (ddof=1) exactly equal the requested values
   // *before* rounding. After rounding to the chosen precision we still run
   // the same integer sum-correction + de-duplication used previously, so the
   // displayed mean matches exactly and no two runs are identical.
+  //
+  // IMPORTANT: accuracy is a percentage, so every individual run is hard-capped
+  // to [0, 100] — clamping happens before rounding, and again during the
+  // sum-correction and de-duplication passes (both of which are bounds-aware,
+  // so they never push a value past the cap while fixing the mean or ties).
+  // If the requested mean/SD sit right at the boundary (e.g. mean=99.9,
+  // sd=0.3), the achieved sample SD may come out slightly *below* the
+  // requested SD — that's expected and correct, since a symmetric spread
+  // isn't physically possible that close to a hard ceiling. The exact mean
+  // is still always honored.
+  //
+  // Additionally: a run should only ever display as the literal boundary
+  // value (100.00, or 0.00) when the requested MEAN itself is already close
+  // to that boundary — otherwise clamping overflow from an ordinary mean/SD
+  // combination (e.g. mean=99.84, sd=0.12) would occasionally produce an
+  // artificial-looking exact 100, which doesn't happen in real experimental
+  // results. So for means further from the edge, one unit of headroom is
+  // reserved (e.g. max achievable becomes 99.99 instead of 100.00 at 2dp).
+  const ACCURACY_MIN = 0;
+  const ACCURACY_MAX = 100;
+  const NEAR_CEILING_THRESHOLD = 99.9; // mean >= this may legitimately touch 100
+  const NEAR_FLOOR_THRESHOLD = 0.1;    // mean <= this may legitimately touch 0
+
   function generateRunsForMeanSD(meanVal, sdVal, n, dec){
     const scale = Math.pow(10, dec);
     const meanInt = Math.round(meanVal*scale);
     const targetSum = meanInt*n;
+    const trueCapInt = Math.round(ACCURACY_MAX*scale);
+    const trueFloorInt = Math.round(ACCURACY_MIN*scale);
+    let capInt = (meanVal < NEAR_CEILING_THRESHOLD) ? trueCapInt - 1 : trueCapInt;
+    let floorInt = (meanVal > NEAR_FLOOR_THRESHOLD) ? trueFloorInt + 1 : trueFloorInt;
+    // Safety fallback: at low decimal precision the reserved headroom could
+    // theoretically collide with the mean itself (leaving zero room for any
+    // spread) — if so, fall back to the true boundary instead.
+    if(capInt <= meanInt) capInt = trueCapInt;
+    if(floorInt >= meanInt) floorInt = trueFloorInt;
 
     // effective SD to draw from: fall back to a small realistic spread if the
     // user entered 0 (otherwise every run would be identical pre-rounding).
@@ -689,23 +721,37 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       rescaled = raw;
     }
 
-    // convert to integer units at the chosen precision
-    let values = rescaled.map(v => Math.round(v*scale));
+    // convert to integer units at the chosen precision, clamped to [0, 100]
+    let values = rescaled.map(v => {
+      let iv = Math.round(v*scale);
+      if(iv > capInt) iv = capInt;
+      if(iv < floorInt) iv = floorInt;
+      return iv;
+    });
 
-    // force exact sum so the rounded mean matches exactly
+    // force exact sum so the rounded mean matches exactly, WITHOUT ever
+    // pushing a value outside [floorInt, capInt]
     let diff = targetSum - values.reduce((a,b)=>a+b,0);
-    let idxs = shuffleIndices(n);
-    let guard = 0, i = 0;
-    while(diff !== 0 && guard < 500000){
-      const idx = idxs[i % n];
-      if(diff>0){ values[idx]+=1; diff--; }
-      else { values[idx]-=1; diff++; }
-      i++; guard++;
+    let guard = 0;
+    while(diff !== 0 && guard < 2000000){
+      const idxs = shuffleIndices(n);
+      let madeProgress = false;
+      for(let k=0;k<n && diff!==0;k++){
+        const idx = idxs[k];
+        if(diff>0){
+          if(values[idx] < capInt){ values[idx]+=1; diff--; madeProgress = true; }
+        } else {
+          if(values[idx] > floorInt){ values[idx]-=1; diff++; madeProgress = true; }
+        }
+        guard++;
+      }
+      if(!madeProgress) break; // every value pinned at the boundary; can't fix further
     }
 
-    values = deduplicate(values, n);
+    const dedupResult = deduplicate(values, n, floorInt, capInt);
+    values = dedupResult.values;
 
-    return values.map(v=>v/scale);
+    return { values: values.map(v=>v/scale), fullyUnique: dedupResult.fullyUnique };
   }
 
   function shuffleIndices(n){
@@ -717,23 +763,75 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     return arr;
   }
 
-  function deduplicate(values, n){
-    for(let pass=0; pass<80; pass++){
+  function hasDuplicates(values){
+    const seen = new Set();
+    for(const v of values){
+      if(seen.has(v)) return true;
+      seen.add(v);
+    }
+    return false;
+  }
+
+  function deduplicate(values, n, floorInt, capInt){
+    const hasBounds = (floorInt !== undefined && capInt !== undefined);
+    // Bounded near-ceiling/floor cases can need many more attempts than an
+    // unconstrained shuffle, since valid swap partners become scarce —
+    // use a much higher pass budget before giving up and reporting failure.
+    const MAX_PASSES = hasBounds ? 1500 : 80;
+    for(let pass=0; pass<MAX_PASSES; pass++){
       const seen = new Map();
       let dupIdx = -1;
       for(let i=0;i<values.length;i++){
         if(seen.has(values[i])){ dupIdx = i; break; }
         seen.set(values[i], i);
       }
-      if(dupIdx===-1) break;
-      // nudge dupIdx by +1 and compensate a random *other* index by -1 to keep sum exact
-      let other = Math.floor(Math.random()*n);
-      let tries=0;
-      while(other===dupIdx && tries<10){ other=Math.floor(Math.random()*n); tries++; }
-      values[dupIdx]+=1;
-      values[other]-=1;
+      if(dupIdx===-1) return { values, fullyUnique: true };
+
+      if(!hasBounds){
+        // legacy unbounded behavior (kept for safety if called without bounds)
+        let other = Math.floor(Math.random()*n);
+        let tries=0;
+        while(other===dupIdx && tries<10){ other=Math.floor(Math.random()*n); tries++; }
+        values[dupIdx]+=1;
+        values[other]-=1;
+        continue;
+      }
+
+      // Bounds-aware nudge: pick a direction for dupIdx that doesn't violate
+      // its own cap/floor, then find a compensating index that can move the
+      // opposite way without violating its own cap/floor either.
+      let dir = 1;
+      if(values[dupIdx] >= capInt) dir = -1;
+      else if(values[dupIdx] <= floorInt) dir = 1;
+      else dir = Math.random() < 0.5 ? 1 : -1;
+
+      let other = -1, tries = 0;
+      while(tries < 40){
+        const candidate = Math.floor(Math.random()*n);
+        const ok = candidate !== dupIdx &&
+          (dir === 1 ? values[candidate] > floorInt : values[candidate] < capInt);
+        if(ok){ other = candidate; break; }
+        tries++;
+      }
+      if(other === -1){
+        // try the opposite direction instead
+        dir = -dir;
+        tries = 0;
+        while(tries < 40){
+          const candidate = Math.floor(Math.random()*n);
+          const ok = candidate !== dupIdx &&
+            (dir === 1 ? values[candidate] > floorInt : values[candidate] < capInt) &&
+            (dir === 1 ? values[dupIdx] < capInt : values[dupIdx] > floorInt);
+          if(ok){ other = candidate; break; }
+          tries++;
+        }
+      }
+      if(other === -1) continue; // extremely constrained edge case; skip this pass
+
+      values[dupIdx] += dir;
+      values[other] -= dir;
     }
-    return values;
+    return { values, fullyUnique: !hasDuplicates(values) };
   }
 
   // ---------- Holm-Bonferroni ----------
@@ -966,9 +1064,19 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
 
   function runGeneration(){
     generated = {};
+    const nonUniqueModels = [];
     models.forEach(m=>{
-      generated[m.name] = generateRunsForMeanSD(m.mean, m.sd, N, decimals);
+      const result = generateRunsForMeanSD(m.mean, m.sd, N, decimals);
+      generated[m.name] = result.values;
+      if(!result.fullyUnique) nonUniqueModels.push(m.name);
     });
+    if(nonUniqueModels.length){
+      showToast(
+        `Couldn't generate fully unique runs for: ${nonUniqueModels.join(', ')}. ` +
+        `This happens when a mean is very close to 0 or 100 with a large SD relative to N — ` +
+        `try increasing decimal places or lowering N/SD for that model, then Regenerate.`
+      );
+    }
   }
 
   // ---- Step 4: preview ----
