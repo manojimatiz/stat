@@ -116,7 +116,7 @@
     color:var(--ink-soft);
     margin-bottom:6px;
   }
-  input[type=text], input[type=number]{
+  input[type=text], input[type=number], select{
     font-family:var(--mono);
     font-size:15px;
     padding:9px 11px;
@@ -134,6 +134,8 @@
   .field{margin-bottom:16px;}
   .field.n-field{max-width:220px;}
   .field.dec-field{max-width:220px;}
+  .field.metric-field{max-width:260px;}
+  .field.range-field{max-width:200px;}
 
   .entry-mode-toggle{
     display:flex; gap:24px; align-items:center; margin-bottom:16px;
@@ -373,19 +375,38 @@
   <header class="page">
     <div class="eyebrow">Paired-comparison significance testing</div>
     <h1>Statistical Comparison Tool</h1>
-    <p>Generate realistic per-run results from reported mean accuracies, then run paired t-tests with Holm–Bonferroni correction against a proposed model.</p>
+    <p id="pageSubtitle">Generate realistic per-run results from reported mean accuracies, then run paired t-tests with Holm–Bonferroni correction against a proposed model.</p>
   </header>
 
   <!-- STEP 1 -->
   <section class="step active" id="step1">
     <div class="step-head">
       <div class="step-num">1</div>
-      <h2>Number of runs</h2>
+      <h2>Metric &amp; number of runs</h2>
       <div class="hint">N per model</div>
     </div>
-    <div class="field n-field">
-      <label for="nRuns">Runs (positive integer)</label>
-      <input type="number" id="nRuns" min="2" step="1" value="10" placeholder="e.g. 10">
+    <div class="row">
+      <div class="field metric-field">
+        <label for="metricSelect">Metric</label>
+        <select id="metricSelect" autocomplete="off">
+          <option value="accuracy">Accuracy (%) — higher is better</option>
+          <option value="mae">MAE — lower is better</option>
+          <option value="mse">MSE — lower is better</option>
+          <option value="rmse">RMSE — lower is better</option>
+          <option value="r2">R² — higher is better</option>
+        </select>
+      </div>
+      <div class="field range-field" id="accRangeField">
+        <label for="accRangeSelect">Accuracy range</label>
+        <select id="accRangeSelect" autocomplete="off">
+          <option value="100">0 – 100 (%)</option>
+          <option value="1">0 – 1 (fraction)</option>
+        </select>
+      </div>
+      <div class="field n-field">
+        <label for="nRuns">Runs (positive integer)</label>
+        <input type="number" id="nRuns" min="2" step="1" value="10" placeholder="e.g. 10">
+      </div>
     </div>
     <div class="error" id="nError"></div>
     <div class="actions">
@@ -397,7 +418,7 @@
   <section class="step" id="step2">
     <div class="step-head">
       <div class="step-num">2</div>
-      <h2>Models &amp; mean accuracy</h2>
+      <h2 id="step2Title">Models &amp; mean accuracy</h2>
       <div class="hint">Mark the proposed model</div>
     </div>
 
@@ -417,7 +438,7 @@
         <thead>
           <tr>
             <th>Model name</th>
-            <th>Mean accuracy (%)</th>
+            <th id="meanColHeader">Mean accuracy (%)</th>
             <th>Standard deviation</th>
             <th class="proposed-col">Proposed</th>
             <th class="rm"></th>
@@ -429,7 +450,7 @@
     </div>
 
     <div id="pasteImportPanel" style="display:none;">
-      <label for="pasteImportArea">Paste rows (one model per line — e.g. "SE-ResNet&#9;89.47 &plusmn; 0.36"). Works with tab or space separated names, and &plusmn;, +/-, +-, ~, or comma between mean and SD. This replaces the current model list with what you paste.</label>
+      <label for="pasteImportArea">Paste rows (one model per line — e.g. "<span id="pasteExample">SE-ResNet&#9;89.47 &plusmn; 0.36</span>"). Works with tab or space separated names, and &plusmn;, +/-, +-, ~, or comma between mean and SD. This replaces the current model list with what you paste.</label>
       <textarea id="pasteImportArea" rows="8" style="width:100%; font-family:var(--mono); font-size:13px; padding:10px 12px; border:1px solid var(--rule); border-radius:2px; background:#fff; color:var(--ink);" placeholder="SE-ResNet&#9;89.47 ± 0.36
 ConvNeXt&#9;91.36 ± 0.31
 CrossViT&#9;92.18 ± 0.28"></textarea>
@@ -533,6 +554,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       <table class="stats" id="statsTable"></table>
     </div>
     <p class="mean-note">Significance is based on the Holm–Bonferroni corrected p-value (α = 0.05).</p>
+    <p class="mean-note" id="directionNote" style="display:none;"></p>
 
     <div class="download-row">
       <button class="secondary" id="downloadWord">⇩ Download Full Report (.doc)</button>
@@ -563,12 +585,118 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
 (function(){
   "use strict";
 
+  // ---------- metric definitions ----------
+  // Every metric runs through the exact same generate → paired t-test → Holm
+  // pipeline; only bounds, direction, default precision and wording differ.
+  // An infinite bound means "no clamp on that side". nearCeil / nearFloor
+  // mark how close the MEAN must be to a finite bound before individual runs
+  // may legitimately display the literal boundary value (see generator).
+  // Mean difference is always Proposed − Baseline, whatever the direction.
+  const ERROR_METRIC = {unit:'', higherBetter:false, min:0, max:Infinity, nearCeil:null, nearFloor:0, decimals:4};
+  const METRICS = {
+    accuracy: {label:'Accuracy', rangeTag:'%', unit:'%', higherBetter:true, min:0, max:100, nearCeil:99.9, nearFloor:0.1, decimals:2,
+      ph:['95.44', '0.20'], newModel:{mean:90, sd:0.2},
+      example:['SE-ResNet', 89.47, 0.36, 'ConvNeXt', 91.36, 0.31, 'CrossViT', 92.18, 0.28],
+      defaults:[
+        {name:"Proposed Model", mean:99.18, sd:0.15, proposed:true},
+        {name:"EfficientNetB4", mean:93.27, sd:0.30, proposed:false},
+        {name:"Swin Transformer", mean:94.82, sd:0.25, proposed:false}
+      ]},
+    // Accuracy reported as a 0–1 fraction (older papers). Not listed in the
+    // Metric dropdown — selected via Metric = Accuracy + Range = 0–1 (see M()).
+    accuracy01: {label:'Accuracy', rangeTag:'0–1', unit:'', higherBetter:true, min:0, max:1, nearCeil:0.999, nearFloor:0.001, decimals:4,
+      ph:['0.9544', '0.0020'], newModel:{mean:0.90, sd:0.002},
+      example:['SE-ResNet', 0.8947, 0.0036, 'ConvNeXt', 0.9136, 0.0031, 'CrossViT', 0.9218, 0.0028],
+      defaults:[
+        {name:"Proposed Model", mean:0.9918, sd:0.0015, proposed:true},
+        {name:"EfficientNetB4", mean:0.9327, sd:0.0030, proposed:false},
+        {name:"Swin Transformer", mean:0.9482, sd:0.0025, proposed:false}
+      ]},
+    mae: Object.assign({}, ERROR_METRIC, {label:'MAE',
+      example:['LSTM', 0.0587, 0.0030, 'GRU', 0.0533, 0.0025, 'Transformer', 0.0471, 0.0022],
+      defaults:[
+        {name:"Proposed Model", mean:0.0412, sd:0.0021, proposed:true},
+        {name:"LSTM", mean:0.0587, sd:0.0030, proposed:false},
+        {name:"GRU", mean:0.0533, sd:0.0025, proposed:false}
+      ]}),
+    // MSE values are typically tiny, so it needs more digits for runs to vary
+    mse: Object.assign({}, ERROR_METRIC, {label:'MSE', decimals:6,
+      example:['LSTM', 0.0058, 0.0004, 'GRU', 0.0049, 0.0003, 'Transformer', 0.0041, 0.0003],
+      defaults:[
+        {name:"Proposed Model", mean:0.0031, sd:0.0002, proposed:true},
+        {name:"LSTM", mean:0.0058, sd:0.0004, proposed:false},
+        {name:"GRU", mean:0.0049, sd:0.0003, proposed:false}
+      ]}),
+    rmse: Object.assign({}, ERROR_METRIC, {label:'RMSE',
+      example:['LSTM', 0.0762, 0.0026, 'GRU', 0.0700, 0.0021, 'Transformer', 0.0640, 0.0023],
+      defaults:[
+        {name:"Proposed Model", mean:0.0557, sd:0.0018, proposed:true},
+        {name:"LSTM", mean:0.0762, sd:0.0026, proposed:false},
+        {name:"GRU", mean:0.0700, sd:0.0021, proposed:false}
+      ]}),
+    r2: {label:'R²', unit:'', higherBetter:true, min:-Infinity, max:1, nearCeil:0.999, nearFloor:null, decimals:4,
+      example:['LSTM', 0.9384, 0.0051, 'GRU', 0.9451, 0.0047, 'Transformer', 0.9533, 0.0042],
+      defaults:[
+        {name:"Proposed Model", mean:0.9712, sd:0.0035, proposed:true},
+        {name:"LSTM", mean:0.9384, sd:0.0051, proposed:false},
+        {name:"GRU", mean:0.9451, sd:0.0047, proposed:false}
+      ]}
+  };
+  let metricKey = 'accuracy';
+  let accScale = '100';  // accuracy range: '100' → 0–100 (%), '1' → 0–1 (fraction)
+  function M(){ return (metricKey === 'accuracy' && accScale === '1') ? METRICS.accuracy01 : METRICS[metricKey]; }
+  // "Mean accuracy (%)", "Mean accuracy (0–1)", "Mean MAE", ...
+  function meanLabel(){ const m = M(); return metricKey === 'accuracy' ? `Mean accuracy (${m.rangeTag})` : `Mean ${m.label}`; }
+  // Metric name for report meta lines: "Accuracy", "Accuracy (0–1)", "MAE", ...
+  function metricTitle(){ return (metricKey === 'accuracy' && accScale === '1') ? 'Accuracy (0–1)' : M().label; }
+  function directionText(){ return M().higherBetter ? 'higher is better' : 'lower is better'; }
+  // Human-readable valid range, e.g. "between 0 and 100", "≥ 0", "≤ 1".
+  function rangeText(){
+    const m = M();
+    if(isFinite(m.min) && isFinite(m.max)) return `between ${m.min} and ${m.max}`;
+    if(isFinite(m.min)) return `≥ ${m.min}`;
+    if(isFinite(m.max)) return `≤ ${m.max}`;
+    return 'a finite number';
+  }
+  function outOfRange(v){ return v < M().min || v > M().max; }
+  // Distance from the mean to the nearest FINITE bound (Infinity if unbounded).
+  function distToBound(v){
+    const m = M();
+    return Math.min(isFinite(m.min) ? v - m.min : Infinity, isFinite(m.max) ? m.max - v : Infinity);
+  }
+  function boundsDescription(){
+    const m = M();
+    const parts = [];
+    if(isFinite(m.min)) parts.push(`${m.min}${m.unit}`);
+    if(isFinite(m.max)) parts.push(`${m.max}${m.unit}`);
+    return parts.join('/');
+  }
+  function extremeSdMessage(names){
+    const isAcc = metricKey === 'accuracy';
+    return `SD is large relative to how close the mean is to ${boundsDescription()} for: ${names.join(', ')}. ` +
+      `Generated runs will be clamped to a valid ${isAcc ? 'accuracy' : M().label} range, so the achieved SD may come out noticeably lower than entered.`;
+  }
+  // Accuracy range mismatch hints. On the 0–100 scale, every mean being ≤ 1
+  // almost certainly means the paper reported 0–1 fractions; on the 0–1
+  // scale, a mean above 1 almost certainly means percentages were entered.
+  function fractionRangeHint(list){
+    if(metricKey !== 'accuracy' || accScale !== '100') return '';
+    const means = list.map(m=>m.mean).filter(v=>!isNaN(v));
+    return (means.length && means.every(v => v >= 0 && v <= 1))
+      ? 'These accuracies look like 0–1 fractions — switch Accuracy range to 0 – 1 in Step 1.' : '';
+  }
+  function percentRangeHint(){
+    return (metricKey === 'accuracy' && accScale === '1')
+      ? ' If these are percentages, switch Accuracy range to 0 – 100 in Step 1.' : '';
+  }
+  // Accuracy keeps the original filenames; other metrics get e.g. "_mae".
+  function fileSuffix(){ return metricKey === 'accuracy' ? '' : '_' + metricKey; }
+  // Example models for the currently selected metric (and accuracy range).
+  function cloneDefaults(){ return M().defaults.map(d=>Object.assign({}, d)); }
+
   // ---------- state ----------
-  let models = [
-    {name:"Proposed Model", mean:99.18, sd:0.15, proposed:true},
-    {name:"EfficientNetB4", mean:93.27, sd:0.30, proposed:false},
-    {name:"Swin Transformer", mean:94.82, sd:0.25, proposed:false}
-  ];
+  let models = cloneDefaults();
+  let modelsEdited = false;  // once true, switching metric never replaces the user's models
   let N = 10;
   let decimals = 2;
   let generated = null;      // { modelName: [values...] }
@@ -734,19 +862,21 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
   // artificial-looking exact 100, which doesn't happen in real experimental
   // results. So for means further from the edge, one unit of headroom is
   // reserved (e.g. max achievable becomes 99.99 instead of 100.00 at 2dp).
-  const ACCURACY_MIN = 0;
-  const ACCURACY_MAX = 100;
-  const NEAR_CEILING_THRESHOLD = 99.9; // mean >= this may legitimately touch 100
-  const NEAR_FLOOR_THRESHOLD = 0.1;    // mean <= this may legitimately touch 0
-
+  //
+  // The same logic applies to every metric via its bounds in METRICS: error
+  // metrics (MAE/MSE/RMSE) are only floored at 0, R² is only capped at 1. An
+  // infinite bound stays ±Infinity here, so every cap/floor comparison below
+  // (and in deduplicate) is simply never triggered on that side.
   function generateRunsForMeanSD(meanVal, sdVal, n, dec){
+    const metric = M();
     const scale = Math.pow(10, dec);
     const meanInt = Math.round(meanVal*scale);
     const targetSum = meanInt*n;
-    const trueCapInt = Math.round(ACCURACY_MAX*scale);
-    const trueFloorInt = Math.round(ACCURACY_MIN*scale);
-    let capInt = (meanVal < NEAR_CEILING_THRESHOLD) ? trueCapInt - 1 : trueCapInt;
-    let floorInt = (meanVal > NEAR_FLOOR_THRESHOLD) ? trueFloorInt + 1 : trueFloorInt;
+    const trueCapInt = isFinite(metric.max) ? Math.round(metric.max*scale) : Infinity;
+    const trueFloorInt = isFinite(metric.min) ? Math.round(metric.min*scale) : -Infinity;
+    // mean >= nearCeil may legitimately touch the cap; mean <= nearFloor may touch the floor
+    let capInt = (isFinite(trueCapInt) && meanVal < metric.nearCeil) ? trueCapInt - 1 : trueCapInt;
+    let floorInt = (isFinite(trueFloorInt) && meanVal > metric.nearFloor) ? trueFloorInt + 1 : trueFloorInt;
     // Safety fallback: at low decimal precision the reserved headroom could
     // theoretically collide with the mean itself (leaving zero room for any
     // spread) — if so, fall back to the true boundary instead.
@@ -755,7 +885,10 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
 
     // effective SD to draw from: fall back to a small realistic spread if the
     // user entered 0 (otherwise every run would be identical pre-rounding).
-    const effSd = sdVal > 0 ? sdVal : Math.max(0.05, meanVal*0.004);
+    // Accuracy keeps its original absolute floor; other metrics live on much
+    // smaller scales, so their fallback is relative to the mean.
+    const effSd = sdVal > 0 ? sdVal
+      : (metricKey === 'accuracy' ? Math.max(0.05*metric.max/100, meanVal*0.004) : Math.max(Math.abs(meanVal)*0.01, 1/scale));
 
     let raw = [];
     for(let i=0;i<n;i++){
@@ -772,7 +905,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       rescaled = raw;
     }
 
-    // convert to integer units at the chosen precision, clamped to [0, 100]
+    // convert to integer units at the chosen precision, clamped to the metric's bounds
     let values = rescaled.map(v => {
       let iv = Math.round(v*scale);
       if(iv > capInt) iv = capInt;
@@ -955,31 +1088,94 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     activateStep(2);
   });
 
+  // Metric / accuracy-range selectors: swap labels, bounds, direction and
+  // default precision. Example models are only swapped in if the user hasn't
+  // touched the model list yet, so real entered/pasted data is never wiped.
+  // Entered values are never rescaled (×100 / ÷100) on a range change —
+  // a scale mismatch is flagged by validation instead.
+  document.getElementById('metricSelect').addEventListener('change', e=>{
+    metricKey = e.target.value;
+    onMetricOrRangeChange();
+  });
+  document.getElementById('accRangeSelect').addEventListener('change', e=>{
+    accScale = e.target.value;
+    onMetricOrRangeChange();
+  });
+
+  function onMetricOrRangeChange(){
+    decimals = M().decimals;
+    document.getElementById('decimals').value = decimals;
+    if(!modelsEdited) models = cloneDefaults();
+    // Any runs/results generated under the previous metric are now stale.
+    generated = null; statsRows = null; modelSummaryRows = null;
+    document.getElementById('doneNote').style.display = 'none';
+    modelError.textContent = '';
+    lockFrom(2);
+    // If the user had already moved past Step 1, keep Step 2 editable so they
+    // can review the models under the new metric and continue from there.
+    if(stepEls[1].classList.contains('done')) stepEls[2].classList.add('active');
+    applyMetricLabels();
+    renderModels();
+  }
+
+  function applyMetricLabels(){
+    const m = M();
+    const isAcc = metricKey === 'accuracy';
+    document.getElementById('accRangeField').style.display = isAcc ? '' : 'none';
+    document.getElementById('pageSubtitle').textContent = isAcc
+      ? 'Generate realistic per-run results from reported mean accuracies, then run paired t-tests with Holm–Bonferroni correction against a proposed model.'
+      : `Generate realistic per-run results from reported mean ${m.label} values (${directionText()}), then run paired t-tests with Holm–Bonferroni correction against a proposed model.`;
+    document.getElementById('step2Title').textContent = isAcc ? 'Models & mean accuracy' : `Models & mean ${m.label}`;
+    document.getElementById('meanColHeader').textContent = meanLabel();
+    const ex = m.example;
+    document.getElementById('pasteExample').textContent = `${ex[0]}\t${ex[1]} ± ${ex[2]}`;
+    document.getElementById('pasteImportArea').placeholder =
+      [0,3,6].map(i=>`${ex[i]}\t${ex[i+1]} ± ${ex[i+2]}`).join('\n');
+    const dirNote = document.getElementById('directionNote');
+    if(m.higherBetter){
+      dirNote.style.display = 'none';
+      dirNote.textContent = '';
+    } else {
+      dirNote.style.display = 'block';
+      dirNote.textContent = directionNoteText();
+    }
+  }
+  function directionNoteText(){
+    return M().higherBetter ? '' :
+      `Mean difference = Proposed − Baseline. For ${M().label} (lower is better) a negative mean difference ` +
+      `(and negative Cohen's d) means the proposed model has lower error.`;
+  }
+
   // ---- Step 2 ----
   const modelBody = document.getElementById('modelBody');
   const modelError = document.getElementById('modelError');
 
   function renderModels(){
+    const metric = M();
+    const minAttr = isFinite(metric.min) ? ` min="${metric.min}"` : '';
+    const maxAttr = isFinite(metric.max) ? ` max="${metric.max}"` : '';
+    const meanPh = metric.ph ? metric.ph[0] : metric.defaults[1].mean;
+    const sdPh = metric.ph ? metric.ph[1] : metric.defaults[1].sd;
     modelBody.innerHTML = '';
     models.forEach((m, idx)=>{
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><input type="text" data-idx="${idx}" class="mName" value="${escapeHtml(m.name)}" placeholder="Model name"></td>
-        <td><input type="number" step="any" min="0" max="100" data-idx="${idx}" class="mMean" value="${m.mean}" placeholder="e.g. 95.44"></td>
-        <td><input type="number" step="any" min="0" data-idx="${idx}" class="mSd" value="${m.sd}" placeholder="e.g. 0.20"></td>
+        <td><input type="number" step="any"${minAttr}${maxAttr} data-idx="${idx}" class="mMean" value="${m.mean}" placeholder="e.g. ${meanPh}"></td>
+        <td><input type="number" step="any" min="0" data-idx="${idx}" class="mSd" value="${m.sd}" placeholder="e.g. ${sdPh}"></td>
         <td class="proposed-col"><input type="radio" name="proposedRadio" data-idx="${idx}" ${m.proposed ? 'checked':''}></td>
         <td class="rm">${models.length>2 ? `<button class="icon-btn" data-idx="${idx}" title="Remove">✕</button>`:''}</td>
       `;
       modelBody.appendChild(tr);
     });
     modelBody.querySelectorAll('.mName').forEach(el=>{
-      el.addEventListener('input', e=>{ models[+e.target.dataset.idx].name = e.target.value; });
+      el.addEventListener('input', e=>{ models[+e.target.dataset.idx].name = e.target.value; modelsEdited = true; });
     });
     modelBody.querySelectorAll('.mMean').forEach(el=>{
-      el.addEventListener('input', e=>{ models[+e.target.dataset.idx].mean = parseFloat(e.target.value); });
+      el.addEventListener('input', e=>{ models[+e.target.dataset.idx].mean = parseFloat(e.target.value); modelsEdited = true; });
     });
     modelBody.querySelectorAll('.mSd').forEach(el=>{
-      el.addEventListener('input', e=>{ models[+e.target.dataset.idx].sd = parseFloat(e.target.value); });
+      el.addEventListener('input', e=>{ models[+e.target.dataset.idx].sd = parseFloat(e.target.value); modelsEdited = true; });
     });
     modelBody.querySelectorAll('input[name=proposedRadio]').forEach(el=>{
       el.addEventListener('change', e=>{
@@ -990,6 +1186,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       el.addEventListener('click', e=>{
         const idx = +e.target.dataset.idx;
         const wasProposed = models[idx].proposed;
+        modelsEdited = true;
         models.splice(idx,1);
         if(wasProposed && models.length) models[0].proposed = true;
         renderModels();
@@ -1001,7 +1198,9 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
   }
 
   document.getElementById('addModel').addEventListener('click', ()=>{
-    models.push({name:`Model ${models.length+1}`, mean:90, sd:0.2, proposed:false});
+    const ref = M().newModel || M().defaults[1];
+    models.push({name:`Model ${models.length+1}`, mean:ref.mean, sd:ref.sd, proposed:false});
+    modelsEdited = true;
     renderModels();
   });
 
@@ -1045,19 +1244,21 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
   //  - mean/SD separated by ± , +/- , +- , ~ , or a comma, with any amount
   //    of surrounding whitespace (e.g. "89.47±0.36", "89.47 ± 0.36", "89.47  ±  0.36")
   //  - a mean value with no SD at all (SD defaults to 0)
+  //  - scientific notation for small loss values (e.g. "1.2e-3 ± 4e-5")
   function parsePastedLine(line){
     const trimmed = line.trim();
     if(!trimmed) return null;
 
+    const num = '(-?\\d+(?:\\.\\d+)?(?:[eE][-+]?\\d+)?)';
     const sepPattern = '(?:\\u00B1|\\+/-|\\+-|~|,)'; // ± | +/- | +- | ~ | ,
-    const pairRegex = new RegExp('^(.+?)\\s+(-?\\d+(?:\\.\\d+)?)\\s*' + sepPattern + '\\s*(-?\\d+(?:\\.\\d+)?)\\s*$');
+    const pairRegex = new RegExp('^(.+?)\\s+' + num + '\\s*' + sepPattern + '\\s*' + num + '\\s*$');
     let m = trimmed.match(pairRegex);
     if(m){
       return { name: m[1].trim(), mean: parseFloat(m[2]), sd: parseFloat(m[3]) };
     }
 
     // Fallback: mean only, no SD
-    const singleRegex = /^(.+?)\s+(-?\d+(?:\.\d+)?)\s*$/;
+    const singleRegex = new RegExp('^(.+?)\\s+' + num + '\\s*$');
     m = trimmed.match(singleRegex);
     if(m){
       return { name: m[1].trim(), mean: parseFloat(m[2]), sd: 0 };
@@ -1077,18 +1278,19 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       return;
     }
     const newModels = [];
-    let skipped = 0, outOfRange = 0;
+    let skipped = 0, outOfRangeCount = 0;
     lines.forEach(line=>{
       const parsed = parsePastedLine(line);
       if(parsed && parsed.name && !isNaN(parsed.mean) && !isNaN(parsed.sd)){
         newModels.push({ name: parsed.name, mean: parsed.mean, sd: parsed.sd, proposed:false });
-        if(parsed.mean < 0 || parsed.mean > 100) outOfRange++;
+        if(outOfRange(parsed.mean)) outOfRangeCount++;
       } else {
         skipped++;
       }
     });
     if(newModels.length > 0){
       models = newModels; // replace the current list with only what was pasted
+      modelsEdited = true;
       renderModels();
       pasteImportArea.value = '';
       pasteImportError.textContent = '';
@@ -1096,23 +1298,22 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       modelError.style.color = 'var(--accent)';
       modelError.textContent = `Imported ${newModels.length} model${newModels.length===1?'':'s'} (replaced previous list).` +
         (skipped>0 ? ` Skipped ${skipped} line${skipped===1?'':'s'} that couldn't be parsed.` : '') +
-        (outOfRange>0 ? ` ${outOfRange} imported mean${outOfRange===1?'':'s'} ${outOfRange===1?'is':'are'} outside 0-100 and will need fixing.` : '') +
+        (outOfRangeCount>0 ? ` ${outOfRangeCount} imported mean${outOfRangeCount===1?'':'s'} ${outOfRangeCount===1?'is':'are'} outside the valid ${M().label} range (${rangeText()}) and will need fixing.` : '') +
         ' Mark one as Proposed below.';
 
       // Same validation warnings as manual entry, surfaced immediately for
       // pasted data too rather than only at the later "Continue" click.
-      const outOfRangeNames = newModels.filter(m => m.mean < 0 || m.mean > 100).map(m => m.name);
+      const outOfRangeNames = newModels.filter(m => outOfRange(m.mean)).map(m => m.name);
       if(outOfRangeNames.length){
-        showToast(`Mean accuracy must be between 0 and 100. Fix: ${outOfRangeNames.join(', ')}.`);
+        showToast(`Mean ${M().label} must be ${rangeText()}. Fix: ${outOfRangeNames.join(', ')}.` + percentRangeHint());
       }
+      const fractionHint = fractionRangeHint(newModels);
+      if(fractionHint) showToast(fractionHint);
       const extremeSdNames = newModels
-        .filter(m => m.mean >= 0 && m.mean <= 100 && m.sd > Math.min(m.mean, 100 - m.mean))
+        .filter(m => !outOfRange(m.mean) && m.sd > distToBound(m.mean))
         .map(m => m.name);
       if(extremeSdNames.length){
-        showToast(
-          `SD is large relative to how close the mean is to 0%/100% for: ${extremeSdNames.join(', ')}. ` +
-          `Generated runs will be clamped to a valid accuracy range, so the achieved SD may come out noticeably lower than entered.`
-        );
+        showToast(extremeSdMessage(extremeSdNames));
       }
     } else {
       pasteImportError.style.color = '';
@@ -1124,39 +1325,43 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     const names = models.map(m=>m.name.trim());
     if(names.some(n=>!n)){ const msg='Every model needs a name.'; modelError.textContent=msg; showToast(msg); return; }
     if(new Set(names).size !== names.length){ const msg='Model names must be unique.'; modelError.textContent=msg; showToast(msg); return; }
-    if(models.some(m=>isNaN(m.mean))){ const msg='Every model needs a numeric mean accuracy.'; modelError.textContent=msg; showToast(msg); return; }
-    if(models.some(m=>m.mean < 0 || m.mean > 100)){ const msg='Mean accuracy must be between 0 and 100.'; modelError.textContent=msg; showToast(msg); return; }
+    if(models.some(m=>isNaN(m.mean))){ const msg=`Every model needs a numeric mean ${metricKey==='accuracy' ? 'accuracy' : M().label}.`; modelError.textContent=msg; showToast(msg); return; }
+    if(models.some(m=>outOfRange(m.mean))){ const msg=`Mean ${metricKey==='accuracy' ? 'accuracy' : M().label} must be ${rangeText()}.` + percentRangeHint(); modelError.textContent=msg; showToast(msg); return; }
     if(models.some(m=>isNaN(m.sd) || m.sd < 0)){ const msg='Every model needs a valid, non-negative standard deviation.'; modelError.textContent=msg; showToast(msg); return; }
     if(!models.some(m=>m.proposed)){ const msg='Mark exactly one model as the proposed model.'; modelError.textContent=msg; showToast(msg); return; }
     if(models.length < 2){ const msg='Add at least one comparison model besides the proposed model.'; modelError.textContent=msg; showToast(msg); return; }
     modelError.textContent = '';
 
-    // Soft warning only — SD large relative to how close the mean is to the
-    // 0%/100% boundary means the generated runs will be heavily compressed
-    // by clamping (achieved SD will come out well below what was entered).
+    // Soft warning only — SD large relative to how close the mean is to a
+    // finite boundary (0%/100% for accuracy, 0 for error metrics, 1 for R²)
+    // means the generated runs will be heavily compressed by clamping
+    // (achieved SD will come out well below what was entered).
     const extremeSdModels = models
-      .filter(m => m.sd > Math.min(m.mean, 100 - m.mean))
+      .filter(m => m.sd > distToBound(m.mean))
       .map(m => m.name);
     if(extremeSdModels.length){
-      showToast(
-        `SD is large relative to how close the mean is to 0%/100% for: ${extremeSdModels.join(', ')}. ` +
-        `Generated runs will be clamped to a valid accuracy range, so the achieved SD may come out noticeably lower than entered.`
-      );
+      showToast(extremeSdMessage(extremeSdModels));
     }
+    // Soft hint only — 0.9 % is a legal accuracy on the 0–100 scale.
+    const fractionHint = fractionRangeHint(models);
+    if(fractionHint) showToast(fractionHint);
 
     // Check the proposed model's entered mean against every baseline's
     // entered mean BEFORE generating any runs — no point running the full
     // pipeline if the premise (proposed should beat the baselines) doesn't hold.
+    // "Beating" depends on direction: higher accuracy/R², lower MAE/MSE/RMSE.
+    const higherBetter = M().higherBetter;
     const proposed = models.find(m=>m.proposed);
     const notBeaten = models
       .filter(m=>!m.proposed)
-      .filter(m=> m.mean >= proposed.mean)
+      .filter(m=> higherBetter ? m.mean >= proposed.mean : m.mean <= proposed.mean)
       .map(m=>`${m.name} (${m.mean.toFixed(decimals)} vs. proposed ${proposed.mean.toFixed(decimals)})`);
 
     if(notBeaten.length){
+      const metricName = metricKey === 'accuracy' ? 'mean accuracy' : `mean ${M().label}`;
       const proceed = await showConfirmModal(
         "Proposed model isn't ahead",
-        `Your proposed model ("${proposed.name}") does not have a higher mean accuracy than:\n\n` +
+        `Your proposed model ("${proposed.name}") does not have a ${higherBetter ? 'higher' : 'lower'} ${metricName} than:\n\n` +
         notBeaten.map(s=>'• ' + s).join('\n') +
         `\n\nA significant result in this case would mean the proposed model is significantly WORSE, not better — ` +
         `so there may be no point proceeding unless that's intentional. Continue anyway, or go back and review your models/means?`
@@ -1243,7 +1448,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       const rawP = twoTailedP(t, df);
       const cohend = meanDiff/sd;
 
-      // 95% confidence interval on the *compared* model's own mean accuracy
+      // 95% confidence interval on the *compared* model's own mean metric value
       // (not the proposed model, not the paired difference): mean ± t.ppf(0.975, n-1) * SE,
       // using that comparison model's own generated runs.
       const otherN = otherVals.length;
@@ -1352,10 +1557,10 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       .meta{color:#555; font-size:10pt;}
     </style></head><body>
     <h1>Statistical Comparison Report</h1>
-    <p class="meta">Proposed model: ${escapeHtml(proposed.name)} &nbsp;|&nbsp; Runs per model: ${N} &nbsp;|&nbsp; Decimal places: ${decimals}</p>
+    <p class="meta">Metric: ${escapeHtml(metricTitle())} (${directionText()}) &nbsp;|&nbsp; Proposed model: ${escapeHtml(proposed.name)} &nbsp;|&nbsp; Runs per model: ${N} &nbsp;|&nbsp; Decimal places: ${decimals}</p>
 
-    <h2>Reported Mean Accuracies</h2>
-    <table><tr><th>Model</th><th>Mean Accuracy (%)</th><th>Standard Deviation</th></tr>
+    <h2>${metricKey === 'accuracy' ? 'Reported Mean Accuracies' : `Reported Mean ${escapeHtml(M().label)}`}</h2>
+    <table><tr><th>Model</th><th>${metricKey === 'accuracy' ? `Mean Accuracy (${M().rangeTag})` : `Mean ${escapeHtml(M().label)}`}</th><th>Standard Deviation</th></tr>
     ${models.map(m=>`<tr><td>${escapeHtml(m.name)}${m.proposed?' (Proposed)':''}</td><td>${m.mean.toFixed(decimals)}</td><td>${m.sd.toFixed(decimals)}</td></tr>`).join('')}
     </table>
 
@@ -1391,13 +1596,14 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       <td>${r.significant ? 'YES' : 'NO'}</td>
     </tr>`).join('')}
     </table>
+    ${M().higherBetter ? '' : `<p class="meta">${escapeHtml(directionNoteText())}</p>`}
     </body></html>`;
 
     const blob = new Blob(['\ufeff', html], {type:'application/msword'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'statistical_comparison_report.doc';
+    a.download = `statistical_comparison_report${fileSuffix()}.doc`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1416,6 +1622,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       th,td{border:1px solid #000; padding:4pt 8pt; font-size:11pt; text-align:center;}
       th{font-weight:700;}
     </style></head><body>
+    ${(metricKey === 'accuracy' && accScale === '100') ? '' : `<p>Metric: ${escapeHtml(metricTitle())} (${directionText()})</p>`}
     <p>95% CI critical value: t(0.975) = ${tCriticalTwoTailed(N-1,0.05).toFixed(6)} (df = N - 1 = ${N-1}, based on ${N} runs per model).</p>
     <table style="margin-bottom:14pt;">
     <tr><th>Method</th><th>Mean</th><th>SD</th><th>95% CI</th><th>Standard Error (used for its CI)</th></tr>
@@ -1449,13 +1656,14 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       <td>${r.significant ? 'YES' : 'NO'}</td>
     </tr>`).join('')}
     </table>
+    ${M().higherBetter ? '' : `<p>${escapeHtml(directionNoteText())}</p>`}
     </body></html>`;
 
     const blob = new Blob(['\ufeff', html], {type:'application/msword'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'statistical_comparison_results.doc';
+    a.download = `statistical_comparison_results${fileSuffix()}.doc`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1704,6 +1912,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
   });
 
   // ---- init ----
+  applyMetricLabels();
   renderModels();
 })();
 </script>
