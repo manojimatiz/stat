@@ -29,6 +29,49 @@
     line-height:1.5;
   }
   .wrap{max-width:980px;margin:0 auto;}
+
+  /* ---- Section navigator ----
+     Wide screens: fixed rail in the free space right of the 980px column
+     (labels at ≥ 1440px, numbers only at 1100–1439px). Narrower: sticky
+     bar of numbered circles across the top. Locked items mirror the faded
+     sections and can't be clicked. */
+  .step{scroll-margin-top:16px;}
+  .section-nav{
+    position:fixed; top:40px; left:calc(50% + 490px + 24px); z-index:50;
+    display:flex; flex-direction:column; gap:2px;
+    border-left:1px solid var(--rule); padding-left:4px;
+  }
+  .section-nav button{
+    display:flex; align-items:center; gap:10px;
+    background:none; border:none; border-left:3px solid transparent; margin-left:-6px;
+    padding:5px 10px 5px 8px; cursor:pointer; text-align:left;
+    font-family:var(--mono); font-size:11px; letter-spacing:.04em; color:var(--ink-soft);
+    white-space:nowrap; transition:color .2s ease, opacity .2s ease;
+  }
+  .section-nav .nav-num{
+    width:22px; height:22px; border-radius:50%; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10.5px; color:var(--ink); border:1px solid var(--rule); background:var(--paper-raised);
+  }
+  .section-nav button:hover:not(.locked){color:var(--accent);}
+  .section-nav button:hover:not(.locked) .nav-num{border-color:var(--accent);}
+  .section-nav button.current{color:var(--accent); font-weight:700; border-left-color:var(--accent);}
+  .section-nav button.current .nav-num{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .section-nav button.locked{opacity:.35; cursor:not-allowed;}
+  @media (max-width:1439px){
+    .section-nav .nav-label{display:none;}
+    .section-nav button{padding:4px 6px 4px 5px;}
+  }
+  @media (max-width:1099px){
+    body{padding-top:0;}
+    .section-nav{
+      position:sticky; top:0; left:auto; flex-direction:row; gap:4px; overflow-x:auto;
+      margin:0 -20px 24px; padding:8px 20px; border-left:none;
+      background:var(--paper); border-bottom:1px solid var(--rule);
+    }
+    .section-nav button{margin-left:0; border-left:none; padding:2px;}
+    .step{scroll-margin-top:64px;}
+  }
   header.page{
     border-bottom: 2px solid var(--ink);
     padding-bottom:18px;
@@ -134,8 +177,9 @@
   .field{margin-bottom:16px;}
   .field.n-field{max-width:220px;}
   .field.dec-field{max-width:220px;}
-  .field.metric-field{max-width:260px;}
+  .field.metric-field{max-width:320px; flex:1 1 280px;}
   .field.range-field{max-width:200px;}
+  .field.seed-field{max-width:300px; flex:1 1 240px;}
 
   .entry-mode-toggle{
     display:flex; gap:24px; align-items:center; margin-bottom:16px;
@@ -148,6 +192,30 @@
     accent-color:var(--accent); width:16px; height:16px; cursor:pointer; margin:0;
   }
   .entry-mode-option.active{ color:var(--ink); font-weight:700; }
+  .entry-mode-toggle{flex-wrap:wrap; row-gap:8px;}
+
+  /* ---- Paste runs (import real per-run values) ---- */
+  .runs-import-tools{display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin:10px 0 4px;}
+  .runs-import-tools .field{max-width:260px;}
+  .pairing-note{
+    font-family:var(--mono); font-size:11.5px; color:var(--ink); line-height:1.55;
+    background:var(--accent-soft); border-left:3px solid var(--accent); padding:8px 12px; margin:12px 0;
+  }
+  .runs-import-preview{margin-top:12px;}
+  .runs-import-preview .detected{font-family:var(--mono); font-size:12px; color:var(--accent); margin:0 0 8px;}
+  .runs-import-preview ul{font-family:var(--mono); font-size:12px; color:var(--nosig); margin:6px 0 0; padding-left:18px;}
+  .runs-import-preview .warn{font-family:var(--mono); font-size:12px; color:var(--ink-soft); margin:8px 0 0;}
+  .imported-banner{
+    display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+    font-family:var(--mono); font-size:12px; color:var(--accent);
+    background:var(--accent-soft); padding:8px 12px; margin-bottom:12px; border-radius:2px;
+  }
+  table.models td input[readonly]{background:transparent; border-color:transparent; color:var(--ink);}
+  table.models td input.invalid{border-color:var(--nosig); background:var(--nosig-soft);}
+  table.models th.flash-warn{color:var(--nosig); background:var(--nosig-soft); transition:background .2s ease;}
+  .step .skip-note{display:none;}
+  .step.skipped .skip-note{display:block;}
+  .step.skipped .gen-controls{display:none;}
 
   table.models{width:100%; border-collapse:collapse; margin-bottom:14px;}
   table.models th{
@@ -354,7 +422,29 @@
   footer.done-note{
     text-align:center; font-family:var(--mono); font-size:11px; color:var(--ink-soft); margin-top:40px;
   }
-  .download-row{display:flex; gap:12px; margin-top:22px; padding-top:20px; border-top:1px solid var(--rule);}
+  .download-row{display:flex; gap:12px; margin-top:22px; padding-top:20px; border-top:1px solid var(--rule); flex-wrap:wrap; align-items:center;}
+
+  .analysis-settings{margin-bottom:6px;}
+  .analysis-settings .field{max-width:260px;}
+  details.more-formulas{margin:10px 0 4px;}
+  details.more-formulas summary{
+    cursor:pointer; font-family:var(--mono); font-size:11px; text-transform:uppercase;
+    letter-spacing:.06em; color:var(--ink-soft); margin-bottom:8px;
+  }
+  details.more-formulas summary:hover{color:var(--accent);}
+  .section-note{margin-top:28px; border-top:1px solid var(--rule); padding-top:18px;}
+  .fr-stats{font-family:var(--mono); font-size:12.5px; line-height:1.7; margin:10px 0 12px;}
+  .fr-grid{display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; margin-bottom:12px;}
+  .chart-card{border:1px solid var(--rule); border-radius:2px; background:#fff; margin:10px 0 16px; padding:12px 14px 8px;}
+  .chart-head{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px;}
+  .chart-head .mean-note{margin:0;}
+  .chart-actions{display:flex; gap:8px;}
+  .chart-body{overflow-x:auto;}
+  .chart-body svg{display:block; max-width:100%; height:auto;}
+  .para-box{
+    font-family:var(--serif); font-size:14.5px; line-height:1.65; background:#fff;
+    border:1px solid var(--rule); border-radius:2px; padding:14px 18px; white-space:pre-line;
+  }
 </style>
 </head>
 <body>
@@ -370,6 +460,7 @@
     </div>
   </div>
 </div>
+<nav class="section-nav" id="sectionNav" aria-label="Sections"></nav>
 <div class="wrap">
 
   <header class="page">
@@ -389,15 +480,20 @@
       <div class="field metric-field">
         <label for="metricSelect">Metric</label>
         <select id="metricSelect" autocomplete="off">
-          <option value="accuracy">Accuracy (%) — higher is better</option>
+          <option value="accuracy">Accuracy — higher is better</option>
+          <option value="precision">Precision — higher is better</option>
+          <option value="recall">Recall — higher is better</option>
+          <option value="f1">F1-score — higher is better</option>
+          <option value="auc">AUC — higher is better</option>
           <option value="mae">MAE — lower is better</option>
           <option value="mse">MSE — lower is better</option>
           <option value="rmse">RMSE — lower is better</option>
+          <option value="mape">MAPE (%) — lower is better</option>
           <option value="r2">R² — higher is better</option>
         </select>
       </div>
       <div class="field range-field" id="accRangeField">
-        <label for="accRangeSelect">Accuracy range</label>
+        <label for="accRangeSelect">Range</label>
         <select id="accRangeSelect" autocomplete="off">
           <option value="100">0 – 100 (%)</option>
           <option value="1">0 – 1 (fraction)</option>
@@ -431,9 +527,17 @@
         <input type="radio" name="entryMode" id="modePasteBtn">
         Paste from table
       </label>
+      <label class="entry-mode-option" id="modeRunsLabel">
+        <input type="radio" name="entryMode" id="modeRunsBtn">
+        Paste runs
+      </label>
     </div>
 
     <div id="manualEntryPanel">
+      <div class="imported-banner" id="importedRunsBanner" style="display:none;">
+        <span id="importedRunsText"></span>
+        <button class="ghost" id="discardImportedRuns">✕ Discard imported runs</button>
+      </div>
       <table class="models" id="modelTable">
         <thead>
           <tr>
@@ -447,6 +551,8 @@
         <tbody id="modelBody"></tbody>
       </table>
       <button class="ghost" id="addModel">+ Add model</button>
+      <div class="error" id="cellProblems"></div>
+      <p class="mean-note" id="addRowHint">Tip: press Enter in the last row to add a model.</p>
     </div>
 
     <div id="pasteImportPanel" style="display:none;">
@@ -454,11 +560,40 @@
       <textarea id="pasteImportArea" rows="8" style="width:100%; font-family:var(--mono); font-size:13px; padding:10px 12px; border:1px solid var(--rule); border-radius:2px; background:#fff; color:var(--ink);" placeholder="SE-ResNet&#9;89.47 ± 0.36
 ConvNeXt&#9;91.36 ± 0.31
 CrossViT&#9;92.18 ± 0.28"></textarea>
+      <p class="mean-note" style="margin-top:4px;">Tip: Ctrl+Enter to import.</p>
       <div class="actions">
         <button class="primary" id="importPasted">Next →</button>
         <button class="secondary" id="cancelPasteImport">Cancel</button>
       </div>
       <div class="error" id="pasteImportError"></div>
+    </div>
+
+    <div id="runsImportPanel" style="display:none;">
+      <label for="runsImportArea">Paste your per-run values — e.g. copied from Excel, Google Sheets, Word, or this tool's "Copy Runs". First row = model names, then one row per run. Tab, comma, or multiple-space separated; a "Run" column and a "Mean ± SD" row are ignored. Models-as-rows tables are detected too.</label>
+      <textarea id="runsImportArea" rows="10" style="width:100%; font-family:var(--mono); font-size:13px; padding:10px 12px; border:1px solid var(--rule); border-radius:2px; background:#fff; color:var(--ink);" placeholder="Run&#9;Proposed Model&#9;EfficientNetB4&#9;Swin Transformer
+1&#9;99.21&#9;93.10&#9;94.75
+2&#9;99.05&#9;93.52&#9;94.90
+3&#9;99.30&#9;93.04&#9;94.61"></textarea>
+      <p class="mean-note" style="margin-top:4px;">Tip: Ctrl+Enter to import.</p>
+      <div class="runs-import-tools">
+        <div class="field">
+          <label for="runsLayoutSelect">Table layout</label>
+          <select id="runsLayoutSelect" autocomplete="off">
+            <option value="auto">Auto-detect</option>
+            <option value="cols">Models as columns</option>
+            <option value="rows">Models as rows</option>
+          </select>
+        </div>
+        <button class="ghost" id="runsUploadBtn">⇧ Upload .csv</button>
+        <input type="file" id="runsFileInput" accept=".csv,.tsv,.txt,text/csv,text/plain" style="display:none;">
+      </div>
+      <div class="pairing-note">Rows are matched by position: run 1 of every model must come from the same seed / data split, run 2 likewise, and so on. That pairing is what the paired t-test and Wilcoxon test rely on.</div>
+      <div class="runs-import-preview" id="runsImportPreview"></div>
+      <div class="actions">
+        <button class="primary" id="importRunsBtn">Import runs →</button>
+        <button class="secondary" id="cancelRunsImport">Cancel</button>
+      </div>
+      <div class="error" id="runsImportError"></div>
     </div>
 
     <div class="error" id="modelError"></div>
@@ -474,13 +609,23 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       <h2>Generate runs</h2>
       <div class="hint">Values match the mean exactly</div>
     </div>
+    <p class="mean-note skip-note">Not needed — your runs were imported in Step 2, so nothing is generated. Continue in Step 4 to check them.</p>
+    <div class="gen-controls">
     <p class="mean-note" style="margin-bottom:16px;">Draws N values per model from a normal distribution around each model's mean and SD, then rescales them so the sample mean and sample SD match exactly what you entered — then rounds and adjusts so the mean still matches exactly at the chosen precision.</p>
-    <div class="field dec-field">
-      <label for="decimals">Decimal places</label>
-      <input type="number" id="decimals" min="1" max="6" step="1" value="2">
+    <div class="row">
+      <div class="field dec-field">
+        <label for="decimals">Decimal places</label>
+        <input type="number" id="decimals" min="1" max="6" step="1" value="2">
+      </div>
+      <div class="field seed-field">
+        <label for="seedInput">Random seed (optional)</label>
+        <input type="text" id="seedInput" autocomplete="off" placeholder="blank = random each time">
+      </div>
     </div>
+    <p class="mean-note" style="margin:-4px 0 14px;">With a seed, the same inputs always produce the same runs (and the same p-values). Regenerate moves to the next seed.</p>
     <div class="actions">
       <button class="primary" id="generateBtn">Generate runs</button>
+    </div>
     </div>
   </section>
 
@@ -498,10 +643,10 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     <div class="table-scroll" id="previewTableWrap">
       <table class="data" id="previewTable"></table>
     </div>
-    <p class="mean-note">The final "Mean" row is computed directly from the generated values shown above, for verification against what you entered in Step 2.</p>
+    <p class="mean-note" id="previewNote">The final "Mean" row is computed directly from the generated values shown above, for verification against what you entered in Step 2.</p>
 
     <div class="confirm-block">
-      <p>Are these generated runs acceptable?</p>
+      <p id="confirmQuestion">Are these generated runs acceptable?</p>
       <div class="actions">
         <button class="primary" id="acceptBtn">✔ Yes, use these runs</button>
         <button class="secondary" id="regenBtn">↺ Regenerate</button>
@@ -514,7 +659,27 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     <div class="step-head">
       <div class="step-num">5</div>
       <h2>Statistical analysis</h2>
-      <div class="hint">Proposed vs. every other model</div>
+      <div class="hint">Settings &amp; formulas</div>
+    </div>
+
+    <div class="row analysis-settings">
+      <div class="field">
+        <label for="correctionSelect">Multiple-comparison correction</label>
+        <select id="correctionSelect" autocomplete="off">
+          <option value="holm">Holm (step-down)</option>
+          <option value="bonferroni">Bonferroni</option>
+          <option value="bh">Benjamini–Hochberg (FDR)</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="alphaSelect">Significance level <span style="text-transform:none;">(α)</span></label>
+        <select id="alphaSelect" autocomplete="off">
+          <option value="0.05">0.05</option>
+          <option value="0.01">0.01</option>
+          <option value="0.001">0.001</option>
+        </select>
+      </div>
     </div>
 
     <div class="divider-note">Formulas used</div>
@@ -529,15 +694,38 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
           <tr><td>Degrees of Freedom</td><td><span class="mathrow">df = n &minus; 1</span></td></tr>
           <tr><td>Paired t-test</td><td><span class="mathrow">t = <span class="frac"><span class="num">d̄</span><span class="den">SE</span></span></span></td></tr>
           <tr><td>Raw p-value</td><td><span class="mathrow">p = 2 &times; P(T &le; &minus;|t|)</span><span class="formula-note">T ~ Student's t-distribution, df degrees of freedom</span></td></tr>
-          <tr><td>Holm Threshold</td><td><span class="mathrow"><span class="frac"><span class="num">&alpha;</span><span class="den">m &minus; rank + 1</span></span></span></td></tr>
-          <tr><td>Corrected P-value</td><td><span class="mathrow">max<sub>j&le;rank</sub> [(m&minus;j+1) &middot; p<sub>(j)</sub>]</span><span class="formula-note">capped at 1</span></td></tr>
+          <tr><td id="fxThrName">Holm Threshold</td><td id="fxThr"><span class="mathrow"><span class="frac"><span class="num">&alpha;</span><span class="den">m &minus; rank + 1</span></span></span></td></tr>
+          <tr><td id="fxCorrName">Corrected P-value</td><td id="fxCorr"><span class="mathrow">max<sub>j&le;rank</sub> [(m&minus;j+1) &middot; p<sub>(j)</sub>]</span><span class="formula-note">capped at 1</span></td></tr>
           <tr><td>Effect Size (Cohen's d)</td><td><span class="mathrow">d = <span class="frac"><span class="num">d̄</span><span class="den">SD</span></span></span></td></tr>
-          <tr><td>Significant</td><td><span class="mathrow">Corrected p &lt; 0.05</span></td></tr>
+          <tr><td>Significant</td><td id="fxSig"><span class="mathrow">Corrected p &lt; 0.05</span></td></tr>
         </tbody>
       </table>
     </div>
+    <details class="more-formulas">
+      <summary>Formulas for the additional tests</summary>
+      <div class="table-scroll">
+        <table class="formula-table">
+          <thead><tr><th>Test</th><th>Formula</th></tr></thead>
+          <tbody>
+            <tr><td>95% CI of Mean Difference</td><td><span class="mathrow">d̄ &plusmn; t<sub>0.975, n&minus;1</sub> &times; SE</span><span class="formula-note">shown in the forest plot</span></td></tr>
+            <tr><td>Shapiro–Wilk W</td><td><span class="mathrow">W = <span class="frac"><span class="num">(&Sigma; a<sub>i</sub> d<sub>(i)</sub>)<sup>2</sup></span><span class="den">&Sigma;(d<sub>i</sub> &minus; d̄)<sup>2</sup></span></span></span><span class="formula-note">on the paired differences; p-value by Royston (1992)</span></td></tr>
+            <tr><td>Wilcoxon signed-rank</td><td><span class="mathrow">W = min(W<sup>+</sup>, W<sup>&minus;</sup>), &nbsp; W<sup>+</sup> = &Sigma;<sub>d<sub>i</sub>&gt;0</sub> rank(|d<sub>i</sub>|)</span><span class="formula-note">exact p for n &le; 25 without ties, otherwise normal approximation</span></td></tr>
+            <tr><td>Friedman &chi;<sup>2</sup></td><td><span class="mathrow">&chi;<sup>2</sup><sub>F</sub> = <span class="frac"><span class="num">12N</span><span class="den">k(k+1)</span></span>[&Sigma;<sub>j</sub> R<sub>j</sub><sup>2</sup> &minus; <span class="frac"><span class="num">k(k+1)<sup>2</sup></span><span class="den">4</span></span>]</span><span class="formula-note">R<sub>j</sub> = average rank of model j (1 = best), tie-corrected; df = k &minus; 1</span></td></tr>
+            <tr><td>Iman–Davenport F</td><td><span class="mathrow">F<sub>F</sub> = <span class="frac"><span class="num">(N &minus; 1) &chi;<sup>2</sup><sub>F</sub></span><span class="den">N(k &minus; 1) &minus; &chi;<sup>2</sup><sub>F</sub></span></span></span><span class="formula-note">df = (k &minus; 1, (k &minus; 1)(N &minus; 1))</span></td></tr>
+            <tr><td>Nemenyi Critical Difference</td><td><span class="mathrow">CD = q<sub>&alpha;</sub> <span class="sqrt"><span class="sqrt-symbol">&radic;</span><span class="sqrt-content"><span class="frac"><span class="num">k(k+1)</span><span class="den">6N</span></span></span></span></span><span class="formula-note">q<sub>&alpha;</sub> = studentized range quantile / &radic;2</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </section>
 
-    <div class="divider-note highlight">Results</div>
+  <!-- STEP 6 -->
+  <section class="step" id="step6">
+    <div class="step-head">
+      <div class="step-num">6</div>
+      <h2>Paired t-test</h2>
+      <div class="hint">Proposed vs. every other model</div>
+    </div>
     <p class="mean-note" id="tValueNote"></p>
     <div class="fullscreen-row" style="justify-content:space-between; align-items:center;">
       <span class="mean-note" style="margin:0;">Model summary (mean, SD, 95% CI, SE)</span>
@@ -553,12 +741,91 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     <div class="stats-table-wrap table-scroll" id="statsTableWrap">
       <table class="stats" id="statsTable"></table>
     </div>
-    <p class="mean-note">Significance is based on the Holm–Bonferroni corrected p-value (α = 0.05).</p>
+    <p class="mean-note" id="sigNote">Significance is based on the Holm–Bonferroni corrected p-value (α = 0.05).</p>
     <p class="mean-note" id="directionNote" style="display:none;"></p>
+  </section>
+
+  <!-- STEP 7 -->
+  <section class="step" id="step7">
+    <div class="step-head">
+      <div class="step-num">7</div>
+      <h2>Shapiro–Wilk + Wilcoxon</h2>
+      <div class="hint">Assumption check &amp; non-parametric test</div>
+    </div>
+    <div class="fullscreen-row">
+      <button class="ghost table-copy" data-copy="wilcoxon">⧉ Copy Results</button>
+    </div>
+    <div class="table-scroll">
+      <table class="stats" id="wilcoxonTable"></table>
+    </div>
+    <p class="mean-note" id="wilcoxonNote"></p>
+  </section>
+
+  <!-- STEP 8 -->
+  <section class="step" id="step8">
+    <div class="step-head">
+      <div class="step-num">8</div>
+      <h2>Friedman test + Nemenyi post-hoc</h2>
+      <div class="hint">All-model comparison</div>
+    </div>
+    <div id="friedmanBlock"></div>
+  </section>
+
+  <!-- STEP 9 -->
+  <section class="step" id="step9">
+    <div class="step-head">
+      <div class="step-num">9</div>
+      <h2>Visualizations</h2>
+      <div class="hint">PNG or copy image</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <span class="mean-note">Distribution of runs per model</span>
+        <span class="chart-actions">
+          <button class="ghost chart-png" data-chart="chartBox" data-name="runs_boxplot">⇩ PNG</button>
+          <button class="ghost chart-copy" data-chart="chartBox">⧉ Copy image</button>
+        </span>
+      </div>
+      <div class="chart-body" id="chartBox"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <span class="mean-note">Mean difference (Proposed − Baseline) with 95% CI</span>
+        <span class="chart-actions">
+          <button class="ghost chart-png" data-chart="chartForest" data-name="forest_plot">⇩ PNG</button>
+          <button class="ghost chart-copy" data-chart="chartForest">⧉ Copy image</button>
+        </span>
+      </div>
+      <div class="chart-body" id="chartForest"></div>
+    </div>
+    <div class="chart-card" id="chartCDCard">
+      <div class="chart-head">
+        <span class="mean-note">Critical-difference diagram (models joined by a bar are not significantly different)</span>
+        <span class="chart-actions">
+          <button class="ghost chart-png" data-chart="chartCD" data-name="cd_diagram">⇩ PNG</button>
+          <button class="ghost chart-copy" data-chart="chartCD">⧉ Copy image</button>
+        </span>
+      </div>
+      <div class="chart-body" id="chartCD"></div>
+    </div>
+  </section>
+
+  <!-- STEP 10 -->
+  <section class="step" id="step10">
+    <div class="step-head">
+      <div class="step-num">10</div>
+      <h2>Results paragraph</h2>
+      <div class="hint">Summary &amp; downloads</div>
+    </div>
+    <div class="fullscreen-row" style="justify-content:space-between; align-items:center;">
+      <span class="mean-note" style="margin:0;">Auto-written summary for your paper — review and edit after pasting.</span>
+      <button class="ghost" id="copyParagraph">⧉ Copy</button>
+    </div>
+    <div class="para-box" id="resultsParagraph"></div>
 
     <div class="download-row">
-      <button class="secondary" id="downloadWord">⇩ Download Full Report (.doc)</button>
-      <button class="secondary" id="downloadResultsOnly">⇩ Download Results Only (.doc)</button>
+      <button class="secondary" id="downloadWord">⇩ Download Full Report (.docx)</button>
+      <button class="secondary" id="downloadResultsOnly">⇩ Download Results Only (.docx)</button>
     </div>
   </section>
 
@@ -592,26 +859,50 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
   // mark how close the MEAN must be to a finite bound before individual runs
   // may legitimately display the literal boundary value (see generator).
   // Mean difference is always Proposed − Baseline, whatever the direction.
+  //
+  // Percentage-type metrics are marked `scalable`: they're defined here on the
+  // 0–100 scale, and the Range selector can switch them to a 0–1 fraction
+  // (older papers often report them that way) — see scaled01() and M().
   const ERROR_METRIC = {unit:'', higherBetter:false, min:0, max:Infinity, nearCeil:null, nearFloor:0, decimals:4};
+  const PERCENT_METRIC = {rangeTag:'%', unit:'%', higherBetter:true, min:0, max:100, nearCeil:99.9, nearFloor:0.1, decimals:2,
+    scalable:true, defaultScale:'100', ph:['95.44', '0.20'], newModel:{mean:90, sd:0.2}};
   const METRICS = {
-    accuracy: {label:'Accuracy', rangeTag:'%', unit:'%', higherBetter:true, min:0, max:100, nearCeil:99.9, nearFloor:0.1, decimals:2,
-      ph:['95.44', '0.20'], newModel:{mean:90, sd:0.2},
+    accuracy: Object.assign({}, PERCENT_METRIC, {label:'Accuracy', noun:'accuracy',
       example:['SE-ResNet', 89.47, 0.36, 'ConvNeXt', 91.36, 0.31, 'CrossViT', 92.18, 0.28],
       defaults:[
         {name:"Proposed Model", mean:99.18, sd:0.15, proposed:true},
         {name:"EfficientNetB4", mean:93.27, sd:0.30, proposed:false},
         {name:"Swin Transformer", mean:94.82, sd:0.25, proposed:false}
-      ]},
-    // Accuracy reported as a 0–1 fraction (older papers). Not listed in the
-    // Metric dropdown — selected via Metric = Accuracy + Range = 0–1 (see M()).
-    accuracy01: {label:'Accuracy', rangeTag:'0–1', unit:'', higherBetter:true, min:0, max:1, nearCeil:0.999, nearFloor:0.001, decimals:4,
-      ph:['0.9544', '0.0020'], newModel:{mean:0.90, sd:0.002},
-      example:['SE-ResNet', 0.8947, 0.0036, 'ConvNeXt', 0.9136, 0.0031, 'CrossViT', 0.9218, 0.0028],
+      ]}),
+    precision: Object.assign({}, PERCENT_METRIC, {label:'Precision', noun:'precision',
+      example:['SE-ResNet', 89.95, 0.34, 'ConvNeXt', 91.72, 0.30, 'CrossViT', 92.51, 0.27],
       defaults:[
-        {name:"Proposed Model", mean:0.9918, sd:0.0015, proposed:true},
-        {name:"EfficientNetB4", mean:0.9327, sd:0.0030, proposed:false},
-        {name:"Swin Transformer", mean:0.9482, sd:0.0025, proposed:false}
-      ]},
+        {name:"Proposed Model", mean:98.02, sd:0.19, proposed:true},
+        {name:"EfficientNetB4", mean:92.88, sd:0.35, proposed:false},
+        {name:"Swin Transformer", mean:94.10, sd:0.30, proposed:false}
+      ]}),
+    recall: Object.assign({}, PERCENT_METRIC, {label:'Recall', noun:'recall',
+      example:['SE-ResNet', 88.61, 0.39, 'ConvNeXt', 90.87, 0.33, 'CrossViT', 91.74, 0.30],
+      defaults:[
+        {name:"Proposed Model", mean:97.66, sd:0.24, proposed:true},
+        {name:"EfficientNetB4", mean:91.43, sd:0.41, proposed:false},
+        {name:"Swin Transformer", mean:93.15, sd:0.36, proposed:false}
+      ]}),
+    f1: Object.assign({}, PERCENT_METRIC, {label:'F1-score', noun:'F1-score',
+      example:['SE-ResNet', 89.27, 0.36, 'ConvNeXt', 91.29, 0.31, 'CrossViT', 92.12, 0.28],
+      defaults:[
+        {name:"Proposed Model", mean:97.84, sd:0.21, proposed:true},
+        {name:"EfficientNetB4", mean:92.15, sd:0.38, proposed:false},
+        {name:"Swin Transformer", mean:93.62, sd:0.33, proposed:false}
+      ]}),
+    // AUC is most often reported as a 0–1 value, so that's its default range.
+    auc: Object.assign({}, PERCENT_METRIC, {label:'AUC', noun:'AUC', defaultScale:'1',
+      example:['SE-ResNet', 95.12, 0.28, 'ConvNeXt', 96.40, 0.25, 'CrossViT', 96.88, 0.22],
+      defaults:[
+        {name:"Proposed Model", mean:99.21, sd:0.12, proposed:true},
+        {name:"EfficientNetB4", mean:96.04, sd:0.31, proposed:false},
+        {name:"Swin Transformer", mean:97.12, sd:0.27, proposed:false}
+      ]}),
     mae: Object.assign({}, ERROR_METRIC, {label:'MAE',
       example:['LSTM', 0.0587, 0.0030, 'GRU', 0.0533, 0.0025, 'Transformer', 0.0471, 0.0022],
       defaults:[
@@ -634,6 +925,13 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
         {name:"LSTM", mean:0.0762, sd:0.0026, proposed:false},
         {name:"GRU", mean:0.0700, sd:0.0021, proposed:false}
       ]}),
+    mape: Object.assign({}, ERROR_METRIC, {label:'MAPE', unit:'%', decimals:2,
+      example:['LSTM', 6.35, 0.34, 'GRU', 5.48, 0.29, 'Transformer', 4.97, 0.26],
+      defaults:[
+        {name:"Proposed Model", mean:4.12, sd:0.21, proposed:true},
+        {name:"LSTM", mean:6.35, sd:0.34, proposed:false},
+        {name:"GRU", mean:5.48, sd:0.29, proposed:false}
+      ]}),
     r2: {label:'R²', unit:'', higherBetter:true, min:-Infinity, max:1, nearCeil:0.999, nearFloor:null, decimals:4,
       example:['LSTM', 0.9384, 0.0051, 'GRU', 0.9451, 0.0047, 'Transformer', 0.9533, 0.0042],
       defaults:[
@@ -642,13 +940,42 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
         {name:"GRU", mean:0.9451, sd:0.0047, proposed:false}
       ]}
   };
+  // Wording noun for non-percentage metrics is just the label ("MAE", "R²").
+  Object.keys(METRICS).forEach(k=>{ if(!METRICS[k].noun) METRICS[k].noun = METRICS[k].label; });
+
+  // 0–1 variant of a percentage-type metric: every bound, threshold, example
+  // and placeholder divided by 100, shown at 4 decimals.
+  function div100(v){ return +(v/100).toFixed(8); }
+  function scaled01(c){
+    return Object.assign({}, c, {
+      rangeTag:'0–1', unit:'', min:0, max:1, nearCeil:c.nearCeil/100, nearFloor:c.nearFloor/100, decimals:4,
+      ph:[div100(+c.ph[0]).toFixed(4), div100(+c.ph[1]).toFixed(4)],
+      newModel:{mean:div100(c.newModel.mean), sd:div100(c.newModel.sd)},
+      example:c.example.map(v => typeof v === 'number' ? div100(v) : v),
+      defaults:c.defaults.map(d => Object.assign({}, d, {mean:div100(d.mean), sd:div100(d.sd)}))
+    });
+  }
+  const METRICS_01 = {};
+  Object.keys(METRICS).forEach(k=>{ if(METRICS[k].scalable) METRICS_01[k] = scaled01(METRICS[k]); });
+
   let metricKey = 'accuracy';
-  let accScale = '100';  // accuracy range: '100' → 0–100 (%), '1' → 0–1 (fraction)
-  function M(){ return (metricKey === 'accuracy' && accScale === '1') ? METRICS.accuracy01 : METRICS[metricKey]; }
-  // "Mean accuracy (%)", "Mean accuracy (0–1)", "Mean MAE", ...
-  function meanLabel(){ const m = M(); return metricKey === 'accuracy' ? `Mean accuracy (${m.rangeTag})` : `Mean ${m.label}`; }
+  let accScale = '100';  // range for percentage-type metrics: '100' → 0–100 (%), '1' → 0–1 (fraction)
+  function isFractionScale(){ return !!METRICS[metricKey].scalable && accScale === '1'; }
+  function M(){ return isFractionScale() ? METRICS_01[metricKey] : METRICS[metricKey]; }
+  // "Mean accuracy (%)", "Mean accuracy (0–1)", "Mean MAPE (%)", "Mean MAE", ...
+  function meanLabel(){
+    const m = M();
+    if(m.scalable) return `Mean ${m.noun} (${m.rangeTag})`;
+    return m.unit ? `Mean ${m.label} (${m.unit})` : `Mean ${m.label}`;
+  }
+  // Report column title: "Mean Accuracy (%)", "Mean F1-score (0–1)", "Mean MAE", ...
+  function meanColTitle(){
+    const m = M();
+    if(m.scalable) return `Mean ${m.label} (${m.rangeTag})`;
+    return m.unit ? `Mean ${m.label} (${m.unit})` : `Mean ${m.label}`;
+  }
   // Metric name for report meta lines: "Accuracy", "Accuracy (0–1)", "MAE", ...
-  function metricTitle(){ return (metricKey === 'accuracy' && accScale === '1') ? 'Accuracy (0–1)' : M().label; }
+  function metricTitle(){ return isFractionScale() ? `${M().label} (0–1)` : M().label; }
   function directionText(){ return M().higherBetter ? 'higher is better' : 'lower is better'; }
   // Human-readable valid range, e.g. "between 0 and 100", "≥ 0", "≤ 1".
   function rangeText(){
@@ -672,22 +999,21 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     return parts.join('/');
   }
   function extremeSdMessage(names){
-    const isAcc = metricKey === 'accuracy';
     return `SD is large relative to how close the mean is to ${boundsDescription()} for: ${names.join(', ')}. ` +
-      `Generated runs will be clamped to a valid ${isAcc ? 'accuracy' : M().label} range, so the achieved SD may come out noticeably lower than entered.`;
+      `Generated runs will be clamped to a valid ${M().noun} range, so the achieved SD may come out noticeably lower than entered.`;
   }
-  // Accuracy range mismatch hints. On the 0–100 scale, every mean being ≤ 1
-  // almost certainly means the paper reported 0–1 fractions; on the 0–1
-  // scale, a mean above 1 almost certainly means percentages were entered.
+  // Range mismatch hints for percentage-type metrics. On the 0–100 scale,
+  // every mean being ≤ 1 almost certainly means the paper reported 0–1
+  // fractions; on the 0–1 scale, a mean above 1 almost certainly means
+  // percentages were entered.
   function fractionRangeHint(list){
-    if(metricKey !== 'accuracy' || accScale !== '100') return '';
+    if(!METRICS[metricKey].scalable || accScale !== '100') return '';
     const means = list.map(m=>m.mean).filter(v=>!isNaN(v));
     return (means.length && means.every(v => v >= 0 && v <= 1))
-      ? 'These accuracies look like 0–1 fractions — switch Accuracy range to 0 – 1 in Step 1.' : '';
+      ? `These ${M().noun} values look like 0–1 fractions — switch Range to 0 – 1 in Step 1.` : '';
   }
   function percentRangeHint(){
-    return (metricKey === 'accuracy' && accScale === '1')
-      ? ' If these are percentages, switch Accuracy range to 0 – 100 in Step 1.' : '';
+    return isFractionScale() ? ' If these are percentages, switch Range to 0 – 100 in Step 1.' : '';
   }
   // Accuracy keeps the original filenames; other metrics get e.g. "_mae".
   function fileSuffix(){ return metricKey === 'accuracy' ? '' : '_' + metricKey; }
@@ -700,8 +1026,16 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
   let N = 10;
   let decimals = 2;
   let generated = null;      // { modelName: [values...] }
+  // "Paste runs" mode: real per-run values supplied by the user. While on,
+  // Step 3 (generation) is skipped and these values become `generated`.
+  let runsImported = false;
+  let importedRuns = null;   // { modelName: [values...] }
+  let importedDecimals = 2;  // display precision inferred from the pasted values
   let statsRows = null;
   let modelSummaryRows = null;
+  let friedmanResult = null;
+  let correctionMethod = 'holm';   // holm | bonferroni | bh | none
+  let alphaLevel = 0.05;
 
   // ---------- toast popup (prominent validation/status messages) ----------
   function showToast(message, type){
@@ -755,11 +1089,37 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     });
   }
 
+  // ---------- random source (optionally seeded) ----------
+  // Every random draw in the generator goes through rand(). With a seed, it's
+  // a mulberry32 PRNG seeded from an FNV-1a hash of the seed text, so the
+  // same seed + inputs always reproduce the same runs.
+  let rand = Math.random;
+  let seedUsed = null;       // seed text behind the current runs (null = unseeded)
+  function hashSeed(str){
+    let h = 2166136261 >>> 0;
+    for(let i=0;i<str.length;i++){ h = Math.imul(h ^ str.charCodeAt(i), 16777619) >>> 0; }
+    return h;
+  }
+  function mulberry32(a){
+    return function(){
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  // Next seed for Regenerate: "42" → "43", "abc" → "abc-1", "abc-1" → "abc-2".
+  function nextSeed(s){
+    if(/^-?\d+$/.test(s)) return String(parseInt(s, 10) + 1);
+    const m = s.match(/^(.*-)(\d+)$/);
+    return m ? m[1] + (parseInt(m[2], 10) + 1) : s + '-1';
+  }
+
   // ---------- helpers: math ----------
   function boxMuller(){
     let u=0,v=0;
-    while(u===0) u=Math.random();
-    while(v===0) v=Math.random();
+    while(u===0) u=rand();
+    while(v===0) v=rand();
     return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
   }
 
@@ -837,6 +1197,285 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     return (lo+hi)/2;
   }
 
+  // ---------- helpers: normal, chi-square, studentized range ----------
+  // Complementary error function (Numerical Recipes erfcc): fractional error
+  // below 1.2e-7 everywhere, including far into the tails.
+  function erfc(x){
+    const z = Math.abs(x), t = 1/(1+0.5*z);
+    const r = t*Math.exp(-z*z-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+
+      t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+t*(-0.82215223+t*0.17087277)))))))));
+    return x >= 0 ? r : 2 - r;
+  }
+  function normCdf(x){ return 0.5*erfc(-x/Math.SQRT2); }
+  function normPdf(x){ return Math.exp(-0.5*x*x)/Math.sqrt(2*Math.PI); }
+
+  // Inverse standard normal CDF (Acklam's algorithm, relative error ~1e-9).
+  function normInv(p){
+    if(p <= 0) return -Infinity;
+    if(p >= 1) return Infinity;
+    const a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+    const b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+    const c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+    const d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+    const pLow = 0.02425;
+    let q, r;
+    if(p < pLow){
+      q = Math.sqrt(-2*Math.log(p));
+      return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+    }
+    if(p > 1-pLow){
+      q = Math.sqrt(-2*Math.log(1-p));
+      return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+    }
+    q = p-0.5; r = q*q;
+    return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+  }
+
+  // Regularized upper incomplete gamma Q(a, x) (series / continued fraction).
+  function gammaQ(a, x){
+    if(x <= 0) return 1;
+    const lnPre = -x + a*Math.log(x) - lgamma(a);
+    if(x < a+1){
+      let ap = a, sum = 1/a, del = sum;
+      for(let n=0;n<1000;n++){ ap += 1; del *= x/ap; sum += del; if(Math.abs(del) < Math.abs(sum)*1e-15) break; }
+      return Math.max(0, 1 - sum*Math.exp(lnPre));
+    }
+    const FPMIN = 1e-300;
+    let b = x+1-a, c = 1/FPMIN, d = 1/b, h = d;
+    for(let i=1;i<1000;i++){
+      const an = -i*(i-a);
+      b += 2;
+      d = an*d + b; if(Math.abs(d) < FPMIN) d = FPMIN;
+      c = b + an/c; if(Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1/d;
+      const del = d*c; h *= del;
+      if(Math.abs(del-1) < 1e-15) break;
+    }
+    return Math.exp(lnPre)*h;
+  }
+  function chiSquareSf(x, df){ return gammaQ(df/2, x/2); }
+  // Upper tail of the F distribution.
+  function fSf(F, d1, d2){
+    if(!isFinite(F)) return 0;
+    if(F <= 0) return 1;
+    return betai(d2/2, d1/2, d2/(d2 + d1*F));
+  }
+
+  // Studentized range distribution with infinite df (the Nemenyi test's
+  // reference distribution): P(Q ≤ q) = k ∫ φ(z) [Φ(z) − Φ(z − q)]^(k−1) dz,
+  // integrated by Simpson's rule. qtukeyInf inverts it by bisection, so the
+  // Nemenyi critical value works for any number of models and any α.
+  function ptukeyInf(q, k){
+    if(q <= 0) return 0;
+    const lo = -8, hi = 8, steps = 800, h = (hi-lo)/steps;
+    let s = 0;
+    for(let i=0;i<=steps;i++){
+      const z = lo + i*h;
+      const w = (i === 0 || i === steps) ? 1 : (i % 2 ? 4 : 2);
+      const diff = Math.max(0, normCdf(z) - normCdf(z - q));
+      s += w*normPdf(z)*Math.pow(diff, k-1);
+    }
+    return Math.min(1, k*s*h/3);
+  }
+  function qtukeyInf(p, k){
+    let lo = 0, hi = 20;
+    for(let i=0;i<60;i++){
+      const mid = (lo+hi)/2;
+      if(ptukeyInf(mid, k) < p) lo = mid; else hi = mid;
+    }
+    return (lo+hi)/2;
+  }
+
+  // ---------- Shapiro–Wilk normality test ----------
+  // Royston (1992) approximation, algorithm AS R94 — the same method as R's
+  // shapiro.test and scipy.stats.shapiro. Valid for 3 ≤ n ≤ 5000.
+  function swPoly(cc, x){ let r = 0; for(let i=cc.length-1;i>=0;i--) r = r*x + cc[i]; return r; }
+  function shapiroWilk(values){
+    const n = values.length;
+    if(n < 3) return { W: NaN, p: NaN };
+    const x = values.slice().sort((a,b)=>a-b);
+    const range = x[n-1] - x[0];
+    if(range < 1e-12) return { W: NaN, p: NaN };  // all identical: undefined
+    const nn2 = Math.floor(n/2);
+    const a = new Array(nn2);
+    if(n === 3){
+      a[0] = Math.SQRT1_2;
+    } else {
+      const c1 = [0, 0.221157, -0.147981, -2.07119, 4.434685, -2.706056];
+      const c2 = [0, 0.042981, -0.293762, -1.752461, 5.682633, -3.582633];
+      const an25 = n + 0.25;
+      const m = [];
+      let summ2 = 0;
+      for(let i=1;i<=nn2;i++){ m[i-1] = normInv((i - 0.375)/an25); summ2 += m[i-1]*m[i-1]; }
+      summ2 *= 2;
+      const ssumm2 = Math.sqrt(summ2), rsn = 1/Math.sqrt(n);
+      const a1 = swPoly(c1, rsn) - m[0]/ssumm2;
+      let i1, fac;
+      if(n > 5){
+        i1 = 3;
+        const a2 = -m[1]/ssumm2 + swPoly(c2, rsn);
+        fac = Math.sqrt((summ2 - 2*m[0]*m[0] - 2*m[1]*m[1]) / (1 - 2*a1*a1 - 2*a2*a2));
+        a[1] = a2;
+      } else {
+        i1 = 2;
+        fac = Math.sqrt((summ2 - 2*m[0]*m[0]) / (1 - 2*a1*a1));
+      }
+      a[0] = a1;
+      for(let i=i1;i<=nn2;i++) a[i-1] = -m[i-1]/fac;
+    }
+    // Full antisymmetric coefficient vector; W = squared correlation with x.
+    const coef = new Array(n).fill(0);
+    for(let i=0;i<nn2;i++){ coef[i] = -a[i]; coef[n-1-i] = a[i]; }
+    const xm = mean(x);
+    let sax = 0, ssa = 0, ssx = 0;
+    for(let i=0;i<n;i++){ const xs = x[i]-xm; sax += coef[i]*xs; ssa += coef[i]*coef[i]; ssx += xs*xs; }
+    let W = (sax*sax)/(ssa*ssx);
+    if(W > 1) W = 1;
+    const w1 = 1 - W;
+    if(n === 3){
+      const p = (6/Math.PI)*(Math.asin(Math.sqrt(W)) - Math.PI/3);
+      return { W, p: Math.max(0, Math.min(1, p)) };
+    }
+    if(w1 <= 0) return { W, p: 1 };
+    let y = Math.log(w1), mu, sigma;
+    if(n <= 11){
+      const gamma = swPoly([-2.273, 0.459], n);
+      if(y >= gamma) return { W, p: 1e-99 };
+      y = -Math.log(gamma - y);
+      mu = swPoly([0.544, -0.39978, 0.025054, -6.714e-4], n);
+      sigma = Math.exp(swPoly([1.3822, -0.77857, 0.062767, -0.0020322], n));
+    } else {
+      const xx = Math.log(n);
+      mu = swPoly([-1.5861, -0.31082, -0.083751, 0.0038915], xx);
+      sigma = Math.exp(swPoly([-0.4803, -0.082676, 0.0030302], xx));
+    }
+    return { W, p: 1 - normCdf((y - mu)/sigma) };
+  }
+
+  // ---------- Wilcoxon signed-rank test (two-sided) ----------
+  // Zero differences are dropped; tied |d| get average ranks. Exact null
+  // distribution (subset-sum counts) when n ≤ 25 and there are no ties,
+  // otherwise the normal approximation with tie + continuity correction —
+  // the same rule R's wilcox.test uses.
+  function averageRanks(vals){
+    // vals already rounded for tie detection; returns ranks (1-based) + tie term Σ(t³ − t)
+    const idx = vals.map((v,i)=>i).sort((a,b)=>vals[a]-vals[b]);
+    const ranks = new Array(vals.length);
+    let tieTerm = 0;
+    for(let i=0;i<idx.length;){
+      let j = i;
+      while(j+1 < idx.length && vals[idx[j+1]] === vals[idx[i]]) j++;
+      const r = (i + j)/2 + 1;
+      for(let k=i;k<=j;k++) ranks[idx[k]] = r;
+      const t = j - i + 1;
+      if(t > 1) tieTerm += t*t*t - t;
+      i = j + 1;
+    }
+    return { ranks, tieTerm };
+  }
+  function roundForTies(v){ return Math.round(v*1e10)/1e10; }
+  function wilcoxonSignedRank(diffs){
+    const d = diffs.map(roundForTies).filter(v => v !== 0);
+    const n = d.length;
+    if(n === 0) return { W: 0, p: 1, n: 0, exact: true };
+    const { ranks, tieTerm } = averageRanks(d.map(Math.abs));
+    let wPlus = 0;
+    d.forEach((v,i)=>{ if(v > 0) wPlus += ranks[i]; });
+    const total = n*(n+1)/2;
+    const wMinus = total - wPlus;
+    const T = Math.min(wPlus, wMinus);
+    let p, exact;
+    if(n <= 25 && tieTerm === 0 && d.length === diffs.length){
+      exact = true;
+      const counts = new Array(total+1).fill(0);
+      counts[0] = 1;
+      for(let i=1;i<=n;i++){ for(let s=total;s>=i;s--) counts[s] += counts[s-i]; }
+      let cdf = 0;
+      for(let s=0;s<=Math.floor(T);s++) cdf += counts[s];
+      p = Math.min(1, 2*cdf/Math.pow(2, n));
+    } else {
+      exact = false;
+      const mu = total/2;
+      const sigma = Math.sqrt(n*(n+1)*(2*n+1)/24 - tieTerm/48);
+      if(sigma === 0) p = 1;
+      else {
+        const z = (T - mu + 0.5)/sigma;  // T ≤ mu; +0.5 = continuity correction toward the mean
+        p = Math.min(1, 2*normCdf(Math.min(z, 0)));
+      }
+    }
+    return { W: T, wPlus, wMinus, n, p, exact };
+  }
+
+  // ---------- Friedman test + Nemenyi post-hoc ----------
+  // matrix: N rows (runs) × k columns (models). Rank 1 = best within each run,
+  // following the metric's direction; ties get average ranks.
+  function friedmanTest(matrix, higherBetter){
+    const N = matrix.length, k = matrix[0].length;
+    const rankSums = new Array(k).fill(0);
+    let tieSum = 0;
+    matrix.forEach(row=>{
+      const keyed = row.map(v => roundForTies(higherBetter ? -v : v));
+      const { ranks, tieTerm } = averageRanks(keyed);
+      ranks.forEach((r,j)=>{ rankSums[j] += r; });
+      tieSum += tieTerm;
+    });
+    const avgRanks = rankSums.map(s => s/N);
+    const sumSq = avgRanks.reduce((s,r)=>s + r*r, 0);
+    let chi2 = 12*N/(k*(k+1)) * (sumSq - k*(k+1)*(k+1)/4);
+    // Tie correction (as in scipy.stats.friedmanchisquare)
+    const tieCorr = 1 - tieSum/(N*(k*k*k - k));
+    if(tieCorr > 0) chi2 /= tieCorr;
+    const df = k - 1;
+    const p = chiSquareSf(chi2, df);
+    // Iman–Davenport F (less conservative than χ²)
+    const denom = N*(k-1) - chi2;
+    const FF = denom > 1e-12 ? (N-1)*chi2/denom : Infinity;
+    const df1 = k-1, df2 = (k-1)*(N-1);
+    return { N, k, avgRanks, chi2, df, p, FF, df1, df2, pF: fSf(FF, df1, df2) };
+  }
+  function nemenyi(k, N, alpha){
+    const q = qtukeyInf(1 - alpha, k)/Math.SQRT2;
+    const se = Math.sqrt(k*(k+1)/(6*N));
+    return { q, se, cd: q*se };
+  }
+  function nemenyiPairP(rankDiff, k, se){
+    return Math.max(0, 1 - ptukeyInf(Math.abs(rankDiff)/se*Math.SQRT2, k));
+  }
+
+  // ---------- multiple-comparison correction ----------
+  // Returns {threshold, corrected, significant} for each p-value, in input order.
+  const CORRECTIONS = {
+    holm: 'Holm', bonferroni: 'Bonferroni', bh: 'Benjamini–Hochberg', none: 'None'
+  };
+  function correctPValues(ps, method, alpha){
+    const m = ps.length;
+    const order = ps.map((p,i)=>i).sort((a,b)=>ps[a]-ps[b]);
+    const out = ps.map(()=>({}));
+    if(method === 'holm'){
+      let runMax = 0;
+      order.forEach((idx,i)=>{
+        const rank = i+1;
+        out[idx].threshold = alpha/(m-rank+1);
+        runMax = Math.max(runMax, (m-rank+1)*ps[idx]);
+        out[idx].corrected = Math.min(runMax, 1);
+      });
+    } else if(method === 'bonferroni'){
+      ps.forEach((p,i)=>{ out[i].threshold = alpha/m; out[i].corrected = Math.min(m*p, 1); });
+    } else if(method === 'bh'){
+      order.forEach((idx,i)=>{ out[idx].threshold = (i+1)*alpha/m; });
+      let runMin = 1;
+      for(let i=m-1;i>=0;i--){
+        const idx = order[i];
+        runMin = Math.min(runMin, ps[idx]*m/(i+1));
+        out[idx].corrected = Math.min(runMin, 1);
+      }
+    } else {
+      ps.forEach((p,i)=>{ out[i].threshold = alpha; out[i].corrected = p; });
+    }
+    out.forEach(o=>{ o.significant = o.corrected < alpha; });
+    return out;
+  }
+
   // ---------- exact-mean, exact-SD run generator (bounded to valid accuracy range) ----------
   // Mirrors the reference tool's approach: draw N values from a normal
   // distribution around (mean, sd), then affinely rescale them so the
@@ -888,7 +1527,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     // Accuracy keeps its original absolute floor; other metrics live on much
     // smaller scales, so their fallback is relative to the mean.
     const effSd = sdVal > 0 ? sdVal
-      : (metricKey === 'accuracy' ? Math.max(0.05*metric.max/100, meanVal*0.004) : Math.max(Math.abs(meanVal)*0.01, 1/scale));
+      : (metric.scalable ? Math.max(0.05*metric.max/100, meanVal*0.004) : Math.max(Math.abs(meanVal)*0.01, 1/scale));
 
     let raw = [];
     for(let i=0;i<n;i++){
@@ -941,7 +1580,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
   function shuffleIndices(n){
     const arr = Array.from({length:n}, (_,i)=>i);
     for(let i=arr.length-1;i>0;i--){
-      const j = Math.floor(Math.random()*(i+1));
+      const j = Math.floor(rand()*(i+1));
       [arr[i],arr[j]]=[arr[j],arr[i]];
     }
     return arr;
@@ -973,9 +1612,9 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
 
       if(!hasBounds){
         // legacy unbounded behavior (kept for safety if called without bounds)
-        let other = Math.floor(Math.random()*n);
+        let other = Math.floor(rand()*n);
         let tries=0;
-        while(other===dupIdx && tries<10){ other=Math.floor(Math.random()*n); tries++; }
+        while(other===dupIdx && tries<10){ other=Math.floor(rand()*n); tries++; }
         values[dupIdx]+=1;
         values[other]-=1;
         continue;
@@ -987,11 +1626,11 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       let dir = 1;
       if(values[dupIdx] >= capInt) dir = -1;
       else if(values[dupIdx] <= floorInt) dir = 1;
-      else dir = Math.random() < 0.5 ? 1 : -1;
+      else dir = rand() < 0.5 ? 1 : -1;
 
       let other = -1, tries = 0;
       while(tries < 40){
-        const candidate = Math.floor(Math.random()*n);
+        const candidate = Math.floor(rand()*n);
         const ok = candidate !== dupIdx &&
           (dir === 1 ? values[candidate] > floorInt : values[candidate] < capInt);
         if(ok){ other = candidate; break; }
@@ -1002,7 +1641,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
         dir = -dir;
         tries = 0;
         while(tries < 40){
-          const candidate = Math.floor(Math.random()*n);
+          const candidate = Math.floor(rand()*n);
           const ok = candidate !== dupIdx &&
             (dir === 1 ? values[candidate] > floorInt : values[candidate] < capInt) &&
             (dir === 1 ? values[dupIdx] < capInt : values[dupIdx] > floorInt);
@@ -1018,36 +1657,22 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     return { values, fullyUnique: !hasDuplicates(values) };
   }
 
-  // ---------- Holm-Bonferroni ----------
-  function holmCorrect(rows, alpha){
-    const m = rows.length;
-    const sorted = rows.slice().sort((a,b)=>a.rawP-b.rawP);
-    let runningMax = 0;
-    sorted.forEach((row, i)=>{
-      const rank = i+1;
-      const threshold = alpha/(m-rank+1);
-      const adjusted = (m-rank+1)*row.rawP;
-      runningMax = Math.max(runningMax, adjusted);
-      const correctedP = Math.min(runningMax, 1);
-      row.holmThreshold = threshold;
-      row.correctedP = correctedP;
-      row.significant = correctedP < 0.05;
-    });
-    return rows;
-  }
+  // Pure functions exposed read-only for verification from the console.
+  window.StatTool = Object.freeze({
+    shapiroWilk, wilcoxonSignedRank, friedmanTest, nemenyi, nemenyiPairP,
+    correctPValues, ptukeyInf, qtukeyInf, normCdf, normInv, chiSquareSf, twoTailedP
+  });
 
   // ================= UI WIRING =================
 
-  const stepEls = {
-    1: document.getElementById('step1'),
-    2: document.getElementById('step2'),
-    3: document.getElementById('step3'),
-    4: document.getElementById('step4'),
-    5: document.getElementById('step5')
-  };
+  // Steps 5–10 are the analysis/results sections; they're all shown together
+  // once the runs are accepted.
+  const LAST_STEP = 10;
+  const stepEls = {};
+  for(let k=1;k<=LAST_STEP;k++) stepEls[k] = document.getElementById('step' + k);
 
   function activateStep(n){
-    for(let k=1;k<=5;k++){
+    for(let k=1;k<=LAST_STEP;k++){
       stepEls[k].classList.remove('active');
     }
     stepEls[n].classList.add('active');
@@ -1055,11 +1680,77 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
   }
   function markDone(n){ stepEls[n].classList.add('done'); }
   function lockFrom(n){
-    for(let k=n;k<=5;k++){
+    for(let k=n;k<=LAST_STEP;k++){
       stepEls[k].classList.remove('done');
       if(k!==n) stepEls[k].classList.remove('active');
     }
   }
+
+  // ---- Section navigator ----
+  // An item is clickable only while its section is unlocked (active or done),
+  // so it always mirrors the faded/unfaded state of the page itself — steps
+  // 5–10 stay locked until the generated runs are accepted.
+  const NAV_LABELS = {1:'Metric & runs', 2:'Models', 3:'Generate runs', 4:'Preview runs', 5:'Formulas',
+    6:'Paired t-test', 7:'Wilcoxon', 8:'Friedman', 9:'Visualizations', 10:'Results paragraph'};
+  const sectionNav = document.getElementById('sectionNav');
+  const navBtns = {};
+  for(let k=1;k<=LAST_STEP;k++){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.innerHTML = `<span class="nav-num">${k}</span><span class="nav-label">${NAV_LABELS[k]}</span>`;
+    b.addEventListener('click', ()=>{
+      if(b.classList.contains('locked')) return;
+      stepEls[k].scrollIntoView({behavior:'smooth', block:'start'});
+    });
+    sectionNav.appendChild(b);
+    navBtns[k] = b;
+  }
+  function isUnlocked(k){ return stepEls[k].classList.contains('active') || stepEls[k].classList.contains('done'); }
+  function syncNavLocks(){
+    const genLabel = runsImported ? 'Not needed (runs imported)' : NAV_LABELS[3];
+    navBtns[3].querySelector('.nav-label').textContent = genLabel;
+    for(let k=1;k<=LAST_STEP;k++){
+      const locked = !isUnlocked(k);
+      navBtns[k].classList.toggle('locked', locked);
+      navBtns[k].setAttribute('aria-disabled', locked ? 'true' : 'false');
+      navBtns[k].title = !locked ? (k === 3 ? genLabel : NAV_LABELS[k])
+        : k >= 5 ? 'Available after you accept the generated runs (Step 4)'
+        : `Available after you complete Step ${k-1}`;
+    }
+  }
+  // Current section = the last one whose top has scrolled past 30% of the
+  // viewport; at the very bottom of the page, the last section.
+  function syncNavCurrent(){
+    let cur = 1;
+    const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+    for(let k=1;k<=LAST_STEP;k++){
+      const top = stepEls[k].getBoundingClientRect().top;
+      if(top <= window.innerHeight*0.3 || (atBottom && top < window.innerHeight)) cur = k;
+    }
+    for(let k=1;k<=LAST_STEP;k++){
+      navBtns[k].classList.toggle('current', k === cur);
+      if(k === cur) navBtns[k].setAttribute('aria-current', 'step'); else navBtns[k].removeAttribute('aria-current');
+    }
+    // keep the current item visible in the horizontal (narrow-screen) bar
+    if(sectionNav.scrollWidth > sectionNav.clientWidth){
+      const b = navBtns[cur];
+      if(b.offsetLeft < sectionNav.scrollLeft || b.offsetLeft + b.offsetWidth > sectionNav.scrollLeft + sectionNav.clientWidth){
+        sectionNav.scrollLeft = b.offsetLeft - sectionNav.clientWidth/2;
+      }
+    }
+  }
+  let navTick = false;
+  function onNavScroll(){
+    if(navTick) return;
+    navTick = true;
+    requestAnimationFrame(()=>{ navTick = false; syncNavCurrent(); });
+  }
+  window.addEventListener('scroll', onNavScroll, {passive:true});
+  window.addEventListener('resize', onNavScroll);
+  const stepClassObserver = new MutationObserver(syncNavLocks);
+  for(let k=1;k<=LAST_STEP;k++) stepClassObserver.observe(stepEls[k], {attributes:true, attributeFilter:['class']});
+  syncNavLocks();
+  syncNavCurrent();
 
   // ---- Step 1 ----
   const nRunsInput = document.getElementById('nRuns');
@@ -1087,14 +1778,23 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     markDone(1);
     activateStep(2);
   });
+  // Enter in the Runs field = Continue to models
+  nRunsInput.addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('toStep2').click(); }
+  });
 
-  // Metric / accuracy-range selectors: swap labels, bounds, direction and
-  // default precision. Example models are only swapped in if the user hasn't
-  // touched the model list yet, so real entered/pasted data is never wiped.
-  // Entered values are never rescaled (×100 / ÷100) on a range change —
-  // a scale mismatch is flagged by validation instead.
+  // Metric / range selectors: swap labels, bounds, direction and default
+  // precision. Example models (and a metric's default range, e.g. 0–1 for
+  // AUC) are only applied if the user hasn't touched the model list yet, so
+  // real entered/pasted data is never wiped or reinterpreted. Entered values
+  // are never rescaled (×100 / ÷100) on a range change — a scale mismatch is
+  // flagged by validation instead.
   document.getElementById('metricSelect').addEventListener('change', e=>{
     metricKey = e.target.value;
+    if(!modelsEdited && METRICS[metricKey].scalable){
+      accScale = METRICS[metricKey].defaultScale;
+      document.getElementById('accRangeSelect').value = accScale;
+    }
     onMetricOrRangeChange();
   });
   document.getElementById('accRangeSelect').addEventListener('change', e=>{
@@ -1103,11 +1803,11 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
   });
 
   function onMetricOrRangeChange(){
-    decimals = M().decimals;
+    decimals = runsImported ? importedDecimals : M().decimals;
     document.getElementById('decimals').value = decimals;
     if(!modelsEdited) models = cloneDefaults();
     // Any runs/results generated under the previous metric are now stale.
-    generated = null; statsRows = null; modelSummaryRows = null;
+    generated = null; statsRows = null; modelSummaryRows = null; friedmanResult = null;
     document.getElementById('doneNote').style.display = 'none';
     modelError.textContent = '';
     lockFrom(2);
@@ -1121,11 +1821,11 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
   function applyMetricLabels(){
     const m = M();
     const isAcc = metricKey === 'accuracy';
-    document.getElementById('accRangeField').style.display = isAcc ? '' : 'none';
+    document.getElementById('accRangeField').style.display = m.scalable ? '' : 'none';
     document.getElementById('pageSubtitle').textContent = isAcc
       ? 'Generate realistic per-run results from reported mean accuracies, then run paired t-tests with Holm–Bonferroni correction against a proposed model.'
-      : `Generate realistic per-run results from reported mean ${m.label} values (${directionText()}), then run paired t-tests with Holm–Bonferroni correction against a proposed model.`;
-    document.getElementById('step2Title').textContent = isAcc ? 'Models & mean accuracy' : `Models & mean ${m.label}`;
+      : `Generate realistic per-run results from reported mean ${m.noun} values (${directionText()}), then run paired t-tests with Holm–Bonferroni correction against a proposed model.`;
+    document.getElementById('step2Title').textContent = `Models & mean ${m.noun}`;
     document.getElementById('meanColHeader').textContent = meanLabel();
     const ex = m.example;
     document.getElementById('pasteExample').textContent = `${ex[0]}\t${ex[1]} ± ${ex[2]}`;
@@ -1156,15 +1856,19 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     const maxAttr = isFinite(metric.max) ? ` max="${metric.max}"` : '';
     const meanPh = metric.ph ? metric.ph[0] : metric.defaults[1].mean;
     const sdPh = metric.ph ? metric.ph[1] : metric.defaults[1].sd;
+    // With imported runs, name/mean/SD come from the pasted values and are
+    // read-only (re-paste to change them); only "Proposed" stays editable.
+    const ro = runsImported ? ' readonly title="From the imported runs — re-paste to change"' : '';
+    const shown = v => runsImported ? v.toFixed(decimals) : v;
     modelBody.innerHTML = '';
     models.forEach((m, idx)=>{
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><input type="text" data-idx="${idx}" class="mName" value="${escapeHtml(m.name)}" placeholder="Model name"></td>
-        <td><input type="number" step="any"${minAttr}${maxAttr} data-idx="${idx}" class="mMean" value="${m.mean}" placeholder="e.g. ${meanPh}"></td>
-        <td><input type="number" step="any" min="0" data-idx="${idx}" class="mSd" value="${m.sd}" placeholder="e.g. ${sdPh}"></td>
+        <td><input type="text" data-idx="${idx}" class="mName" value="${escapeHtml(m.name)}" placeholder="Model name"${ro}></td>
+        <td><input type="number" step="any"${minAttr}${maxAttr} data-idx="${idx}" class="mMean" value="${shown(m.mean)}" placeholder="e.g. ${meanPh}"${ro}></td>
+        <td><input type="number" step="any" min="0" data-idx="${idx}" class="mSd" value="${shown(m.sd)}" placeholder="e.g. ${sdPh}"${ro}></td>
         <td class="proposed-col"><input type="radio" name="proposedRadio" data-idx="${idx}" ${m.proposed ? 'checked':''}></td>
-        <td class="rm">${models.length>2 ? `<button class="icon-btn" data-idx="${idx}" title="Remove">✕</button>`:''}</td>
+        <td class="rm">${models.length>2 && !runsImported ? `<button class="icon-btn" data-idx="${idx}" title="Remove">✕</button>`:''}</td>
       `;
       modelBody.appendChild(tr);
     });
@@ -1192,7 +1896,68 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
         renderModels();
       });
     });
+    refreshCellMarks();
   }
+
+  // ---- Live cell validation (same rules as the Continue button) ----
+  // Returns one {name?, mean?, sd?} map of problem messages per model row.
+  function validateModelCells(){
+    const names = models.map(m=>String(m.name).trim());
+    return models.map((m, i)=>{
+      const p = {};
+      if(!names[i]) p.name = 'Every model needs a name.';
+      else if(names.indexOf(names[i]) !== i || names.lastIndexOf(names[i]) !== i) p.name = 'Duplicate name — model names must be unique.';
+      if(isNaN(m.mean)) p.mean = `Enter a numeric mean ${M().noun}.`;
+      else if(outOfRange(m.mean)) p.mean = `Mean ${M().noun} must be ${rangeText()}.` + percentRangeHint();
+      else if(runsImported && importedRuns && importedRuns[m.name] && importedRuns[m.name].some(outOfRange)){
+        p.mean = `Some imported runs are outside ${rangeText()}.` + percentRangeHint();
+      }
+      if(isNaN(m.sd)) p.sd = 'Enter a numeric standard deviation.';
+      else if(m.sd < 0) p.sd = "Standard deviation can't be negative.";
+      return p;
+    });
+  }
+  const cellProblems = document.getElementById('cellProblems');
+  function refreshCellMarks(){
+    const probs = validateModelCells();
+    let count = 0;
+    modelBody.querySelectorAll('tr').forEach((tr, i)=>{
+      [['name','.mName'], ['mean','.mMean'], ['sd','.mSd']].forEach(([key, sel])=>{
+        const el = tr.querySelector(sel);
+        const msg = probs[i] && probs[i][key];
+        if(el.dataset.baseTitle === undefined) el.dataset.baseTitle = el.title;  // e.g. the imported-runs tooltip
+        el.classList.toggle('invalid', !!msg);
+        el.title = msg || el.dataset.baseTitle;
+        if(msg) count++;
+      });
+    });
+    cellProblems.textContent = count
+      ? `✕ ${count} cell${count === 1 ? ' needs' : 's need'} fixing — hover a red cell to see why.` : '';
+  }
+  // Focus the first red cell, optionally only among those matching `selector`
+  // and `test`, so the cursor lands on the cell the error message is about.
+  function focusFirstInvalidCell(selector, test){
+    const el = [...modelBody.querySelectorAll((selector || '') + '.invalid')].find(e => !test || test(e))
+      || modelBody.querySelector('.invalid');
+    if(el){ el.focus(); if(el.select) el.select(); }
+  }
+  function flashProposedHeader(){
+    const th = document.querySelector('#modelTable th.proposed-col');
+    th.classList.add('flash-warn');
+    setTimeout(()=>th.classList.remove('flash-warn'), 1800);
+  }
+  // Delegated: runs after each cell's own input listener has updated `models`.
+  modelBody.addEventListener('input', refreshCellMarks);
+  // Enter in any field of the last row = + Add model, then focus the new name.
+  modelBody.addEventListener('keydown', e=>{
+    if(e.key !== 'Enter' || runsImported || e.target.tagName !== 'INPUT') return;
+    const rows = modelBody.querySelectorAll('tr');
+    if(e.target.closest('tr') !== rows[rows.length - 1]) return;
+    e.preventDefault();
+    document.getElementById('addModel').click();
+    const newName = modelBody.querySelector('tr:last-child .mName');
+    if(newName){ newName.focus(); newName.select(); }
+  });
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
@@ -1214,25 +1979,46 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
   const modeManualLabel = document.getElementById('modeManualLabel');
   const modePasteLabel = document.getElementById('modePasteLabel');
   const step2ContinueRow = document.getElementById('step2ContinueRow');
+  const runsImportPanel = document.getElementById('runsImportPanel');
+  const runsImportArea = document.getElementById('runsImportArea');
+  const runsImportError = document.getElementById('runsImportError');
+  const modeRunsBtn = document.getElementById('modeRunsBtn');
+  const modeRunsLabel = document.getElementById('modeRunsLabel');
 
+  // mode: 'manual' (model table), 'paste' (mean ± SD rows), 'runs' (per-run values)
   function showEntryMode(mode){
-    const isPaste = mode === 'paste';
-    manualEntryPanel.style.display = isPaste ? 'none' : 'block';
+    const isPaste = mode === 'paste', isRuns = mode === 'runs', isManual = !isPaste && !isRuns;
+    manualEntryPanel.style.display = isManual ? 'block' : 'none';
     pasteImportPanel.style.display = isPaste ? 'block' : 'none';
-    step2ContinueRow.style.display = isPaste ? 'none' : 'flex';
-    modelError.textContent = isPaste ? '' : modelError.textContent;
-    modeManualBtn.checked = !isPaste;
+    runsImportPanel.style.display = isRuns ? 'block' : 'none';
+    step2ContinueRow.style.display = isManual ? 'flex' : 'none';
+    modelError.textContent = isManual ? modelError.textContent : '';
+    modeManualBtn.checked = isManual;
     modePasteBtn.checked = isPaste;
-    modeManualLabel.classList.toggle('active', !isPaste);
+    modeRunsBtn.checked = isRuns;
+    modeManualLabel.classList.toggle('active', isManual);
     modePasteLabel.classList.toggle('active', isPaste);
+    modeRunsLabel.classList.toggle('active', isRuns);
     if(isPaste){
       pasteImportError.textContent = '';
       pasteImportArea.focus();
+    }
+    if(isRuns){
+      runsImportError.textContent = '';
+      renderRunsImportPreview();
+      runsImportArea.focus();
     }
   }
 
   modeManualBtn.addEventListener('change', ()=> showEntryMode('manual'));
   modePasteBtn.addEventListener('change', ()=> showEntryMode('paste'));
+  modeRunsBtn.addEventListener('change', ()=> showEntryMode('runs'));
+  // Ctrl+Enter (⌘+Enter on Mac) in a paste box = its import button
+  [[pasteImportArea, 'importPasted'], [runsImportArea, 'importRunsBtn']].forEach(([area, btnId])=>{
+    area.addEventListener('keydown', e=>{
+      if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); document.getElementById(btnId).click(); }
+    });
+  });
   document.getElementById('cancelPasteImport').addEventListener('click', ()=>{
     pasteImportArea.value = '';
     pasteImportError.textContent = '';
@@ -1289,6 +2075,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       }
     });
     if(newModels.length > 0){
+      if(runsImported) setImportedMode(false);  // mean ± SD entry replaces any imported runs
       models = newModels; // replace the current list with only what was pasted
       modelsEdited = true;
       renderModels();
@@ -1305,7 +2092,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       // pasted data too rather than only at the later "Continue" click.
       const outOfRangeNames = newModels.filter(m => outOfRange(m.mean)).map(m => m.name);
       if(outOfRangeNames.length){
-        showToast(`Mean ${M().label} must be ${rangeText()}. Fix: ${outOfRangeNames.join(', ')}.` + percentRangeHint());
+        showToast(`Mean ${M().noun} must be ${rangeText()}. Fix: ${outOfRangeNames.join(', ')}.` + percentRangeHint());
       }
       const fractionHint = fractionRangeHint(newModels);
       if(fractionHint) showToast(fractionHint);
@@ -1321,14 +2108,280 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     }
   });
 
+  // ---- Paste runs: import real per-run values (Step 2) ----
+  // Accepts a runs table copied from Excel / Sheets / Word / "Copy Runs" or a
+  // CSV file: models as columns (header = names, one row per run) or models
+  // as rows (name, then its runs). A run-index column and Mean/SD summary
+  // rows/columns are ignored. Runs are paired across models by position.
+  const RUN_LABEL_RE = /^(runs?|runs?\s*(#|no\.?)|#|no\.?|seeds?|folds?|iter|iterations?|trials?)$/i;  // run-index column header
+  const RUN_CELL_RE = /^(run|seed|fold|trial|iter|iteration)\s*#?\s*\d+$/i;                         // "Run 1", "Fold 3", …
+  const SUMMARY_RE = /^(mean|average|avg|sd|s\.d\.|std|stdev|std\.?\s*dev\.?|standard deviation)(\s*(±|\+\/-|\+-|&|and|\/)\s*(sd|s\.d\.|std|stdev|standard deviation))?\s*:?$/i;
+  const CORNER_RE = /^(model|models|method|methods|name|approach|algorithm)?$/i;
+  const runsLayoutSelect = document.getElementById('runsLayoutSelect');
+  const runsImportPreview = document.getElementById('runsImportPreview');
+
+  function parseCellNumber(s){
+    const t = String(s).trim().replace(/%$/, '').trim();
+    return /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(t) ? parseFloat(t) : NaN;
+  }
+  function isNumCell(s){ return !isNaN(parseCellNumber(s)); }
+  function cellDecimals(s){
+    const t = String(s).trim().replace(/%$/, '');
+    if(/[eE]/.test(t)) return 6;
+    const i = t.indexOf('.');
+    return i < 0 ? 0 : t.length - i - 1;
+  }
+  // One CSV line → cells, honouring "quoted, cells" and "" escapes.
+  function splitDelimited(line, sep){
+    const out = [];
+    let cur = '', quoted = false;
+    for(let i=0;i<line.length;i++){
+      const c = line[i];
+      if(quoted){
+        if(c === '"'){ if(line[i+1] === '"'){ cur += '"'; i++; } else quoted = false; }
+        else cur += c;
+      } else if(c === '"' && !cur.trim()){ quoted = true; cur = ''; }
+      else if(c === sep){ out.push(cur); cur = ''; }
+      else cur += c;
+    }
+    out.push(cur);
+    return out.map(s=>s.trim());
+  }
+  // Text → grid of trimmed cells. Separator priority: tab, comma, semicolon,
+  // then whitespace (2+ spaces between aligned columns, so names may contain
+  // single spaces; or single spaces with leading words joined as one name).
+  function splitRunsGrid(text){
+    const lines = text.split('\n').map(l=>l.replace(/\r$/, '')).filter(l=>l.trim().length);
+    let grid;
+    if(lines.some(l=>l.includes('\t'))) grid = lines.map(l=>l.split('\t').map(s=>s.trim()));
+    else if(lines.some(l=>l.includes(','))) grid = lines.map(l=>splitDelimited(l, ','));
+    else if(lines.some(l=>l.includes(';'))) grid = lines.map(l=>splitDelimited(l, ';'));
+    else grid = lines.map(l=>{
+      const t = l.trim();
+      const wide = t.split(/\s{2,}/);
+      if(wide.length > 1) return wide;
+      const tok = t.split(/\s+/);
+      let i = 0;
+      while(i < tok.length && !isNumCell(tok[i])) i++;
+      return (i > 1 && i < tok.length) ? [tok.slice(0, i).join(' '), ...tok.slice(i)] : tok;
+    });
+    // trailing empty cells (e.g. a stray tab at the end of a row) carry nothing
+    return grid.map(r=>{ const c = r.slice(); while(c.length && c[c.length-1] === '') c.pop(); return c; });
+  }
+
+  // Returns { layout, names, runs:{name:[values]}, R, decimals, errors[], warnings[] }.
+  function parseRunsTable(text, layoutPref){
+    const res = { errors:[], warnings:[], names:[], runs:{}, R:0, decimals:2, layout:'cols' };
+    const grid = splitRunsGrid(text);
+    if(!grid.length){ res.errors.push('Paste a table of runs first.'); return res; }
+    const body = grid.slice(1).filter(r=>r.length && !SUMMARY_RE.test(r[0]));
+    const textFirst = body.filter(r=>!isNumCell(r[0]) && !RUN_CELL_RE.test(r[0])).length;
+    const layout = layoutPref !== 'auto' ? layoutPref
+      : (body.length && textFirst > body.length/2) ? 'rows' : 'cols';
+    res.layout = layout;
+    let maxDec = 0;
+    const cols = [];   // [{name, cells:[{raw, where}]}]
+
+    if(layout === 'cols'){
+      let header = grid[0];
+      const hasHeader = header.some(c => c !== '' && !isNumCell(c));
+      let rows = (hasHeader ? grid.slice(1) : grid).filter(r=>r.length && !SUMMARY_RE.test(r[0]));
+      const width = Math.max(0, ...rows.map(r=>r.length));
+      const seqFirst = rows.length > 0 && rows.every((r,i)=>parseCellNumber(r[0]) === i+1 || RUN_CELL_RE.test(r[0]));
+      if(hasHeader && header.length === width - 1 && seqFirst) header = ['', ...header];  // blank corner cell lost
+      const runCol = hasHeader ? (RUN_LABEL_RE.test(header[0]) || (header[0] === '' && seqFirst)) : (seqFirst && width > 2);
+      const start = runCol ? 1 : 0;
+      const names = hasHeader ? header.slice(start) : Array.from({length: width - start}, (_,j)=>`Model ${j+1}`);
+      if(!hasHeader) res.warnings.push('No header row with model names was found, so models are named Model 1, Model 2, … — add a header row to use real names.');
+      names.forEach((name, j)=>cols.push({ name, cells: [] }));
+      rows.forEach((r, i)=>{
+        const runName = runCol ? (RUN_CELL_RE.test(r[0]) ? r[0] : `Run ${r[0] || i+1}`) : `Run ${i+1}`;
+        if(r.length - start > names.length){
+          res.errors.push(`${runName} has ${r.length - start} values but there are only ${names.length} model names in the header.`);
+        }
+        names.forEach((name, j)=>cols[j].cells.push({ raw: r[start + j], where: `${runName}, ${name || `column ${start+j+1}`}` }));
+      });
+    } else {
+      const first = grid[0];
+      const firstIsHeader = first.length > 1 && CORNER_RE.test(first[0]) &&
+        (first.slice(1).some(c=>!isNumCell(c)) || first.slice(1).every((c,i)=>parseCellNumber(c) === i+1));
+      // summary columns ("Mean", "SD", "Mean ± SD") can only be spotted via the header
+      const skip = new Set();
+      if(firstIsHeader) first.forEach((c,i)=>{ if(i > 0 && SUMMARY_RE.test(c)) skip.add(i); });
+      const rows = (firstIsHeader ? grid.slice(1) : grid).filter(r=>r.length && !SUMMARY_RE.test(r[0]));
+      rows.forEach(r=>{
+        const cells = [];
+        r.forEach((c,i)=>{ if(i > 0 && !skip.has(i)) cells.push({ raw: c, where: `${r[0] || 'unnamed model'}, run ${cells.length+1}` }); });
+        cols.push({ name: r[0], cells });
+      });
+    }
+
+    // values, names and shape
+    cols.forEach((col, j)=>{
+      if(!col.name) res.errors.push(`Model ${j+1} has no name.`);
+      const vals = [];
+      col.cells.forEach(cell=>{
+        if(cell.raw === undefined || cell.raw === ''){ res.errors.push(`${cell.where}: missing value.`); return; }
+        const v = parseCellNumber(cell.raw);
+        if(isNaN(v)){ res.errors.push(`${cell.where}: "${cell.raw}" is not a number.`); return; }
+        maxDec = Math.max(maxDec, cellDecimals(cell.raw));
+        vals.push(v);
+      });
+      col.values = vals;
+    });
+    if(cols.length < 2) res.errors.push(`Need at least 2 models — found ${cols.length}.`);
+    const names = cols.map(c=>c.name);
+    const dup = names.filter((n,i)=>n && names.indexOf(n) !== i);
+    if(dup.length) res.errors.push(`Model names must be unique — repeated: ${[...new Set(dup)].join(', ')}.`);
+    const counts = cols.map(c=>c.cells.length);
+    if(cols.length && counts.some(n=>n !== counts[0])){
+      res.errors.push('Every model needs the same number of runs (they are paired by position): ' +
+        cols.map(c=>`${c.name || '?'} = ${c.cells.length}`).join(', ') + '.');
+    }
+    const R = counts.length ? Math.min(...counts) : 0;
+    if(cols.length && R < 2) res.errors.push(`Need at least 2 runs per model — found ${R}.`);
+    if(res.errors.length) return res;
+
+    const bad = cols.filter(c=>c.values.some(outOfRange)).map(c=>c.name);
+    if(bad.length) res.errors.push(`${M().label} values must be ${rangeText()} — check: ${bad.join(', ')}.` + percentRangeHint());
+    const allVals = [].concat(...cols.map(c=>c.values));
+    const fracHint = fractionRangeHint(allVals.map(v=>({mean:v})));
+    if(fracHint) res.warnings.push(fracHint);
+    if(R < 5) res.warnings.push(`Only ${R} runs per model — the tests will have low power (df = ${R-1}).`);
+
+    res.names = names;
+    cols.forEach(c=>{ res.runs[c.name] = c.values; });
+    res.R = R;
+    res.decimals = Math.min(8, Math.max(1, maxDec));
+    return res;
+  }
+
+  // Live preview under the paste box; returns the parse result (or null if empty).
+  function renderRunsImportPreview(){
+    const text = runsImportArea.value;
+    if(!text.trim()){ runsImportPreview.innerHTML = ''; return null; }
+    const p = parseRunsTable(text, runsLayoutSelect.value);
+    const layoutText = p.layout === 'rows' ? 'models as rows' : 'models as columns';
+    if(p.errors.length){
+      const shown = p.errors.slice(0, 8).map(e=>`<li>${escapeHtml(e)}</li>`).join('') +
+        (p.errors.length > 8 ? `<li>…and ${p.errors.length - 8} more.</li>` : '');
+      runsImportPreview.innerHTML = `<p class="detected" style="color:var(--nosig);">Read as ${layoutText} — can't import yet:</p><ul>${shown}</ul>`;
+      return p;
+    }
+    const d = p.decimals;
+    const rows = p.names.map(n=>{
+      const v = p.runs[n];
+      return `<tr><td>${escapeHtml(n)}</td><td>${v.length}</td><td>${mean(v).toFixed(d)} &plusmn; ${sampleStd(v).toFixed(d)}</td>` +
+        `<td>${Math.min(...v).toFixed(d)}</td><td>${Math.max(...v).toFixed(d)}</td></tr>`;
+    }).join('');
+    runsImportPreview.innerHTML =
+      `<p class="detected">✔ Read as ${layoutText}: ${p.names.length} models × ${p.R} runs (${d} decimal place${d === 1 ? '' : 's'})</p>` +
+      `<div class="table-scroll" style="display:inline-block; width:auto; max-width:100%;"><table class="ci-se-ref-table">` +
+      `<thead><tr><th>Model</th><th>Runs</th><th>Mean &plusmn; SD</th><th>Min</th><th>Max</th></tr></thead><tbody>${rows}</tbody></table></div>` +
+      p.warnings.map(w=>`<p class="warn">⚠ ${escapeHtml(w)}</p>`).join('');
+    return p;
+  }
+  let runsPreviewTimer = null;
+  runsImportArea.addEventListener('input', ()=>{
+    clearTimeout(runsPreviewTimer);
+    runsPreviewTimer = setTimeout(renderRunsImportPreview, 150);
+  });
+  runsLayoutSelect.addEventListener('change', renderRunsImportPreview);
+
+  const runsFileInput = document.getElementById('runsFileInput');
+  document.getElementById('runsUploadBtn').addEventListener('click', ()=> runsFileInput.click());
+  runsFileInput.addEventListener('change', ()=>{
+    const file = runsFileInput.files && runsFileInput.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      runsImportArea.value = String(reader.result).replace(/^﻿/, '');
+      runsImportError.textContent = '';
+      renderRunsImportPreview();
+    };
+    reader.onerror = ()=>{ runsImportError.textContent = `Couldn't read ${file.name}.`; };
+    reader.readAsText(file);
+    runsFileInput.value = '';  // allow re-uploading the same file
+  });
+
+  document.getElementById('cancelRunsImport').addEventListener('click', ()=>{
+    runsImportError.textContent = '';
+    showEntryMode('manual');
+  });
+
+  document.getElementById('importRunsBtn').addEventListener('click', ()=>{
+    const p = renderRunsImportPreview();
+    if(!p){ runsImportError.textContent = 'Paste a table of runs (or upload a .csv) first.'; return; }
+    if(p.errors.length){ runsImportError.textContent = 'Fix the problems listed above, then import.'; return; }
+    runsImportError.textContent = '';
+    importedRuns = p.runs;
+    importedDecimals = p.decimals;
+    models = p.names.map(name=>({ name, mean: mean(p.runs[name]), sd: sampleStd(p.runs[name]), proposed:false }));
+    modelsEdited = true;
+    N = p.R;
+    nRunsInput.value = p.R;
+    setImportedMode(true);
+    showEntryMode('manual');
+    modelError.style.color = 'var(--accent)';
+    modelError.textContent = `Imported ${p.names.length} models × ${p.R} runs. Mark one as Proposed below.`;
+    p.warnings.forEach(w=>showToast(w));
+  });
+
+  document.getElementById('discardImportedRuns').addEventListener('click', ()=>{
+    setImportedMode(false);
+    modelError.style.color = 'var(--accent)';
+    modelError.textContent = 'Imported runs discarded — the means/SDs are kept as manual entries, and runs will be generated from them.';
+  });
+
+  // Switches the whole flow between imported runs and generated runs.
+  function setImportedMode(on){
+    runsImported = on;
+    if(!on) importedRuns = null;
+    decimals = on ? importedDecimals : M().decimals;
+    document.getElementById('decimals').value = decimals;
+    nRunsInput.disabled = on;
+    nRunsInput.title = on ? 'Set by the imported runs' : '';
+    document.getElementById('addModel').style.display = on ? 'none' : '';
+    document.getElementById('addRowHint').style.display = on ? 'none' : '';
+    document.getElementById('importedRunsBanner').style.display = on ? 'flex' : 'none';
+    document.getElementById('importedRunsText').textContent = on
+      ? `Using imported runs: ${models.length} models × ${N} runs. Name, mean and SD come from your data.` : '';
+    document.getElementById('toStep3').textContent = on ? 'Continue to preview →' : 'Continue to generation →';
+    stepEls[3].classList.toggle('skipped', on);
+    document.getElementById('previewNote').textContent = on
+      ? 'These are your imported runs. The final "Mean" row is computed directly from them.'
+      : 'The final "Mean" row is computed directly from the generated values shown above, for verification against what you entered in Step 2.';
+    document.getElementById('confirmQuestion').textContent = on ? 'Are these imported runs correct?' : 'Are these generated runs acceptable?';
+    document.getElementById('regenBtn').style.display = on ? 'none' : '';
+    // anything computed from the previous runs is now stale
+    generated = null; statsRows = null; modelSummaryRows = null; friedmanResult = null;
+    document.getElementById('doneNote').style.display = 'none';
+    lockFrom(2);
+    if(stepEls[1].classList.contains('done')) stepEls[2].classList.add('active');
+    renderModels();
+    syncNavLocks();
+  }
+
+  // Imported runs skip Step 3: they go straight to the Step 4 preview.
+  function useImportedRuns(){
+    generated = {};
+    models.forEach(m=>{ generated[m.name] = importedRuns[m.name].slice(); });
+    seedUsed = null;
+    markDone(2);
+    markDone(3);
+    renderPreview();
+    activateStep(4);
+  }
+
   document.getElementById('toStep3').addEventListener('click', async ()=>{
     const names = models.map(m=>m.name.trim());
-    if(names.some(n=>!n)){ const msg='Every model needs a name.'; modelError.textContent=msg; showToast(msg); return; }
-    if(new Set(names).size !== names.length){ const msg='Model names must be unique.'; modelError.textContent=msg; showToast(msg); return; }
-    if(models.some(m=>isNaN(m.mean))){ const msg=`Every model needs a numeric mean ${metricKey==='accuracy' ? 'accuracy' : M().label}.`; modelError.textContent=msg; showToast(msg); return; }
-    if(models.some(m=>outOfRange(m.mean))){ const msg=`Mean ${metricKey==='accuracy' ? 'accuracy' : M().label} must be ${rangeText()}.` + percentRangeHint(); modelError.textContent=msg; showToast(msg); return; }
-    if(models.some(m=>isNaN(m.sd) || m.sd < 0)){ const msg='Every model needs a valid, non-negative standard deviation.'; modelError.textContent=msg; showToast(msg); return; }
-    if(!models.some(m=>m.proposed)){ const msg='Mark exactly one model as the proposed model.'; modelError.textContent=msg; showToast(msg); return; }
+    refreshCellMarks();  // cell-level failures below also move the cursor to the first red cell
+    if(names.some(n=>!n)){ const msg='Every model needs a name.'; modelError.textContent=msg; showToast(msg); focusFirstInvalidCell('.mName', e=>!e.value.trim()); return; }
+    if(new Set(names).size !== names.length){ const msg='Model names must be unique.'; modelError.textContent=msg; showToast(msg); focusFirstInvalidCell('.mName'); return; }
+    if(models.some(m=>isNaN(m.mean))){ const msg=`Every model needs a numeric mean ${M().noun}.`; modelError.textContent=msg; showToast(msg); focusFirstInvalidCell('.mMean'); return; }
+    if(models.some(m=>outOfRange(m.mean))){ const msg=`Mean ${M().noun} must be ${rangeText()}.` + percentRangeHint(); modelError.textContent=msg; showToast(msg); focusFirstInvalidCell('.mMean'); return; }
+    if(models.some(m=>isNaN(m.sd) || m.sd < 0)){ const msg='Every model needs a valid, non-negative standard deviation.'; modelError.textContent=msg; showToast(msg); focusFirstInvalidCell('.mSd'); return; }
+    if(!models.some(m=>m.proposed)){ const msg='Mark exactly one model as the proposed model.'; modelError.textContent=msg; showToast(msg); flashProposedHeader(); return; }
     if(models.length < 2){ const msg='Add at least one comparison model besides the proposed model.'; modelError.textContent=msg; showToast(msg); return; }
     modelError.textContent = '';
 
@@ -1336,11 +2389,18 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     // finite boundary (0%/100% for accuracy, 0 for error metrics, 1 for R²)
     // means the generated runs will be heavily compressed by clamping
     // (achieved SD will come out well below what was entered).
-    const extremeSdModels = models
+    // (Not relevant to imported runs — nothing is generated or clamped.)
+    const extremeSdModels = runsImported ? [] : models
       .filter(m => m.sd > distToBound(m.mean))
       .map(m => m.name);
     if(extremeSdModels.length){
       showToast(extremeSdMessage(extremeSdModels));
+    }
+    // Imported runs: every individual value must be in range (the metric or
+    // range may have been changed since the import).
+    if(runsImported){
+      const bad = models.filter(m => importedRuns[m.name].some(outOfRange)).map(m => m.name);
+      if(bad.length){ const msg=`${M().label} values must be ${rangeText()} — check the imported runs of: ${bad.join(', ')}.` + percentRangeHint(); modelError.textContent=msg; showToast(msg); focusFirstInvalidCell('.mMean'); return; }
     }
     // Soft hint only — 0.9 % is a legal accuracy on the 0–100 scale.
     const fractionHint = fractionRangeHint(models);
@@ -1358,7 +2418,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       .map(m=>`${m.name} (${m.mean.toFixed(decimals)} vs. proposed ${proposed.mean.toFixed(decimals)})`);
 
     if(notBeaten.length){
-      const metricName = metricKey === 'accuracy' ? 'mean accuracy' : `mean ${M().label}`;
+      const metricName = `mean ${M().noun}`;
       const proceed = await showConfirmModal(
         "Proposed model isn't ahead",
         `Your proposed model ("${proposed.name}") does not have a ${higherBetter ? 'higher' : 'lower'} ${metricName} than:\n\n` +
@@ -1369,6 +2429,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       if(!proceed) return; // stay on Step 2 so the user can adjust
     }
 
+    if(runsImported){ useImportedRuns(); return; }
     markDone(2);
     activateStep(3);
   });
@@ -1376,6 +2437,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
   // ---- Step 3: generate ----
   const decimalsInput = document.getElementById('decimals');
   document.getElementById('generateBtn').addEventListener('click', ()=>{
+    if(runsImported) return;  // imported runs are never overwritten by generated ones
     decimals = Math.min(6, Math.max(1, parseInt(decimalsInput.value,10) || 2));
     runGeneration();
     markDone(3);
@@ -1383,7 +2445,12 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     activateStep(4);
   });
 
+  const seedInput = document.getElementById('seedInput');
   function runGeneration(){
+    // Fresh PRNG per generation so a given seed always reproduces the same runs.
+    const seedText = seedInput.value.trim();
+    seedUsed = seedText || null;
+    rand = seedUsed ? mulberry32(hashSeed(seedUsed)) : Math.random;
     generated = {};
     const nonUniqueModels = [];
     models.forEach(m=>{
@@ -1419,6 +2486,11 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
   }
 
   document.getElementById('regenBtn').addEventListener('click', ()=>{
+    // With a seed, regenerating moves to the next seed (and shows it), so
+    // every set of runs still corresponds to one exact, reproducible seed.
+    if(runsImported) return;
+    const s = seedInput.value.trim();
+    if(s) seedInput.value = nextSeed(s);
     runGeneration();
     renderPreview();
   });
@@ -1427,6 +2499,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     markDone(4);
     runStats();
     activateStep(5);
+    for(let k=6;k<=LAST_STEP;k++) stepEls[k].classList.add('active');
     document.getElementById('doneNote').style.display = 'block';
   });
 
@@ -1460,14 +2533,31 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       const ciLower = otherMean - otherTCrit*otherSe;
       const ciUpper = otherMean + otherTCrit*otherSe;
 
+      // 95% CI of the paired mean difference itself (used by the forest plot).
+      const diffTCrit = tCriticalTwoTailed(df, 0.05);
+
       return {
         comparison: `${proposed.name} vs. ${m.name}`,
+        baseline: m.name,
         meanDiff, sd, se, df, t, rawP, cohend, ciLower, ciUpper,
-        ciSe: otherSe, ciTCrit: otherTCrit
+        ciSe: otherSe, ciTCrit: otherTCrit,
+        diffCiLower: meanDiff - diffTCrit*se, diffCiUpper: meanDiff + diffTCrit*se,
+        sw: shapiroWilk(diffs),
+        wil: wilcoxonSignedRank(diffs)
       };
     });
 
-    statsRows = holmCorrect(rows, 0.05);
+    statsRows = rows;
+
+    // Friedman across ALL models (needs ≥ 3). Rows = runs, columns = models.
+    if(models.length >= 3){
+      const matrix = Array.from({length:N}, (_,r)=>models.map(m=>generated[m.name][r]));
+      friedmanResult = friedmanTest(matrix, M().higherBetter);
+      friedmanResult.names = models.map(m=>m.name);
+      friedmanResult.proposedIdx = models.findIndex(m=>m.proposed);
+    } else {
+      friedmanResult = null;
+    }
 
     // Full model summary (Method / Mean / SD / 95% CI), for every model
     // including the proposed one — each computed from that model's own
@@ -1486,7 +2576,7 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
       };
     });
 
-    renderStats();
+    applyCorrections();  // corrections + α, then renders everything
   }
 
   function fmt(v, d){ return Number(v).toFixed(d); }
@@ -1499,7 +2589,146 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     return v.toFixed(6);
   }
 
+  // Applies the chosen correction method + α to the t-test and Wilcoxon
+  // p-values, and the α-dependent Nemenyi critical difference. Called after
+  // runStats and whenever the Correction / α selectors change (no regeneration).
+  function applyCorrections(){
+    const tc = correctPValues(statsRows.map(r=>r.rawP), correctionMethod, alphaLevel);
+    const wc = correctPValues(statsRows.map(r=>r.wil.p), correctionMethod, alphaLevel);
+    statsRows.forEach((r,i)=>{
+      r.threshold = tc[i].threshold;
+      r.correctedP = tc[i].corrected;
+      r.significant = tc[i].significant;
+      r.wilCorrected = wc[i].corrected;
+      r.wilSignificant = wc[i].significant;
+    });
+    if(friedmanResult){
+      const fr = friedmanResult;
+      const nm = nemenyi(fr.k, fr.N, alphaLevel);
+      fr.q = nm.q; fr.cd = nm.cd; fr.se = nm.se;
+      fr.significant = fr.p < alphaLevel;
+      // every pair of models, with its rank difference and Nemenyi p-value
+      fr.pairs = [];
+      for(let i=0;i<fr.k;i++) for(let j=i+1;j<fr.k;j++){
+        const diff = fr.avgRanks[i] - fr.avgRanks[j];
+        fr.pairs.push({ i, j, diff, p: nemenyiPairP(diff, fr.k, fr.se), significant: Math.abs(diff) > fr.cd });
+      }
+    }
+    renderStats();
+  }
+
+  const correctionSelect = document.getElementById('correctionSelect');
+  const alphaSelect = document.getElementById('alphaSelect');
+  correctionSelect.addEventListener('change', ()=>{
+    correctionMethod = correctionSelect.value;
+    if(statsRows) applyCorrections(); else renderFormulaRows();
+  });
+  alphaSelect.addEventListener('change', ()=>{
+    alphaLevel = parseFloat(alphaSelect.value);
+    if(statsRows) applyCorrections(); else renderFormulaRows();
+  });
+
+  // ---- correction-dependent labels (shared by screen, reports and copies) ----
+  // style 'screen' matches the on-screen / Full Report headers, 'doc' the
+  // Results-only report and Copy Results headers (their original wording).
+  function thresholdHeader(style){
+    switch(correctionMethod){
+      case 'holm': return style === 'doc' ? "Holm's Threshold" : 'Holm Threshold';
+      case 'bonferroni': return 'Bonferroni Threshold';
+      case 'bh': return 'BH Threshold';
+      default: return 'Threshold (α)';
+    }
+  }
+  function correctedHeader(style){
+    if(correctionMethod === 'none') return 'P-value (uncorrected)';
+    return style === 'doc' ? 'Corrected P-Value' : 'Corrected P-value';
+  }
+  function resultsHeaderCols(style){
+    return ['Comparison','Mean Difference','Standard Deviation','Standard Error','Degrees of Freedom',
+      'Paired t-test (t)','Raw p-value', thresholdHeader(style), correctedHeader(style),
+      "Effect Size (Cohen's d)",'Significant'];
+  }
+  // Formatted cells for one pairwise row (comparison name NOT escaped).
+  function resultsRowCells(r){
+    return [r.comparison, fmt(r.meanDiff, decimals), fmt(r.sd, 6), fmt(r.se, 6), String(r.df),
+      fmt(r.t, 6), fmtP(r.rawP), fmt(r.threshold, 6), fmtP(r.correctedP), fmt(r.cohend, 6),
+      r.significant ? 'YES' : 'NO'];
+  }
+  function correctionPhrase(){
+    // "Holm-corrected", "Bonferroni-corrected", "BH-adjusted", "uncorrected"
+    return {holm:'Holm-corrected', bonferroni:'Bonferroni-corrected', bh:'BH-adjusted', none:'uncorrected'}[correctionMethod];
+  }
+  function sigNoteText(){
+    const a = alphaLevel;
+    switch(correctionMethod){
+      case 'holm': return `Significance is based on the Holm–Bonferroni corrected p-value (α = ${a}).`;
+      case 'bonferroni': return `Significance is based on the Bonferroni-corrected p-value (α = ${a}).`;
+      case 'bh': return `Significance is based on the Benjamini–Hochberg (FDR) adjusted p-value (α = ${a}).`;
+      default: return `Significance is based on the raw p-value (α = ${a}) — no multiple-comparison correction applied.`;
+    }
+  }
+  function renderFormulaRows(){
+    const alpha = '&alpha;';
+    const F = {
+      holm: ['Holm Threshold', `<span class="mathrow"><span class="frac"><span class="num">${alpha}</span><span class="den">m &minus; rank + 1</span></span></span>`,
+             'Corrected P-value', `<span class="mathrow">max<sub>j&le;rank</sub> [(m&minus;j+1) &middot; p<sub>(j)</sub>]</span><span class="formula-note">capped at 1</span>`],
+      bonferroni: ['Bonferroni Threshold', `<span class="mathrow"><span class="frac"><span class="num">${alpha}</span><span class="den">m</span></span></span>`,
+             'Corrected P-value', `<span class="mathrow">min(m &middot; p, 1)</span>`],
+      bh: ['BH Threshold', `<span class="mathrow"><span class="frac"><span class="num">rank &middot; ${alpha}</span><span class="den">m</span></span></span>`,
+             'Corrected P-value', `<span class="mathrow">min<sub>j&ge;rank</sub> [<span class="frac"><span class="num">m</span><span class="den">j</span></span> &middot; p<sub>(j)</sub>]</span><span class="formula-note">capped at 1 (Benjamini–Hochberg adjusted)</span>`],
+      none: ['Threshold', `<span class="mathrow">${alpha}</span>`,
+             'P-value', `<span class="mathrow">p</span><span class="formula-note">no multiple-comparison correction</span>`]
+    }[correctionMethod];
+    document.getElementById('fxThrName').textContent = F[0];
+    document.getElementById('fxThr').innerHTML = F[1];
+    document.getElementById('fxCorrName').textContent = F[2];
+    document.getElementById('fxCorr').innerHTML = F[3];
+    document.getElementById('fxSig').innerHTML =
+      `<span class="mathrow">${correctionMethod === 'none' ? 'p' : 'Corrected p'} &lt; ${alphaLevel}</span>`;
+  }
+
+  // ---- Wilcoxon / normality table (shared by screen, reports, CSV, LaTeX) ----
+  function wilcoxonHeaderCols(){
+    return ['Comparison','Shapiro–Wilk W','SW p-value','Normal? (p ≥ 0.05)','Wilcoxon W','p-value method',
+      'Raw p-value', correctedHeader('screen'), 'Significant'];
+  }
+  function wilcoxonRowCells(r){
+    const normal = isNaN(r.sw.p) ? '—' : (r.sw.p >= 0.05 ? 'Yes' : 'No');
+    return [r.comparison, isNaN(r.sw.W) ? '—' : fmt(r.sw.W, 4), isNaN(r.sw.p) ? '—' : fmtP(r.sw.p), normal,
+      String(r.wil.W), r.wil.exact ? 'exact' : 'normal approx.', fmtP(r.wil.p), fmtP(r.wilCorrected),
+      r.wilSignificant ? 'YES' : 'NO'];
+  }
+
+  // ---- Friedman / Nemenyi text helpers ----
+  function friedmanSummaryLines(){
+    const fr = friedmanResult;
+    if(!fr) return null;
+    return {
+      friedman: `Friedman χ²(${fr.df}) = ${fmt(fr.chi2, 4)}, p = ${fmtP(fr.p)} — ` +
+        (fr.significant ? `significant at α = ${alphaLevel}` : `not significant at α = ${alphaLevel}`) + '.',
+      iman: `Iman–Davenport F(${fr.df1}, ${fr.df2}) = ${isFinite(fr.FF) ? fmt(fr.FF, 4) : '∞'}, p = ${fmtP(fr.pF)}.`,
+      nemenyi: `Nemenyi critical difference: q(α = ${alphaLevel}, k = ${fr.k}) = ${fmt(fr.q, 4)}, ` +
+        `CD = ${fmt(fr.q, 4)} × √(${fr.k}·${fr.k+1} / (6·${fr.N})) = ${fmt(fr.cd, 4)}.`
+    };
+  }
+  function rankOrder(){
+    const fr = friedmanResult;
+    return fr.avgRanks.map((r,i)=>i).sort((a,b)=>fr.avgRanks[a]-fr.avgRanks[b]);
+  }
+  // Proposed vs. each other model under Nemenyi.
+  function nemenyiProposedRows(){
+    const fr = friedmanResult;
+    const p = fr.proposedIdx;
+    return fr.names.map((name,j)=>j).filter(j=>j !== p).map(j=>{
+      const pair = fr.pairs.find(x => (x.i === p && x.j === j) || (x.i === j && x.j === p));
+      const diff = fr.avgRanks[j] - fr.avgRanks[p];  // positive = proposed ranked better
+      return { name: fr.names[j], diff, p: pair.p, significant: pair.significant };
+    });
+  }
+
   function renderStats(){
+    renderFormulaRows();
+    document.getElementById('sigNote').textContent = sigNoteText();
     const table = document.getElementById('statsTable');
     const ciDf = N - 1;
     const ciTCrit = tCriticalTwoTailed(ciDf, 0.05);
@@ -1518,156 +2747,707 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     }).join('');
     seTable.innerHTML = seThead + '<tbody>'+seRows+'</tbody>';
 
-    const headCols = ['Comparison','Mean Difference','Standard Deviation','Standard Error','Degrees of Freedom',
-      'Paired t-test (t)','Raw p-value','Holm Threshold','Corrected P-value',"Effect Size (Cohen's d)",'Significant'];
-    let thead = '<thead><tr>' + headCols.map(h=>`<th>${h}</th>`).join('') + '</tr></thead>';
+    let thead = '<thead><tr>' + resultsHeaderCols('screen').map(h=>`<th>${h}</th>`).join('') + '</tr></thead>';
     let rows = statsRows.map(r=>{
+      const cells = resultsRowCells(r);
       const sigClass = r.significant ? 'sig-yes' : 'sig-no';
-      const sigText = r.significant ? 'YES' : 'NO';
-      return `<tr>
-        <td>${escapeHtml(r.comparison)}</td>
-        <td>${fmt(r.meanDiff, decimals)}</td>
-        <td>${fmt(r.sd, 6)}</td>
-        <td>${fmt(r.se, 6)}</td>
-        <td>${r.df}</td>
-        <td>${fmt(r.t, 6)}</td>
-        <td>${fmtP(r.rawP)}</td>
-        <td>${fmt(r.holmThreshold, 6)}</td>
-        <td>${fmtP(r.correctedP)}</td>
-        <td>${fmt(r.cohend, 6)}</td>
-        <td class="${sigClass}">${sigText}</td>
-      </tr>`;
+      return '<tr>' + cells.map((c,i)=>
+        i === cells.length-1 ? `<td class="${sigClass}">${c}</td>` : `<td>${escapeHtml(c)}</td>`
+      ).join('') + '</tr>';
     }).join('');
     table.innerHTML = thead + '<tbody>'+rows+'</tbody>';
+
+    renderWilcoxon();
+    renderFriedman();
+    renderCharts();
+    document.getElementById('resultsParagraph').textContent = buildResultsParagraph();
   }
 
-  // ---- Download Word (.doc) ----
-  document.getElementById('downloadWord').addEventListener('click', ()=>{
-    const proposed = models.find(m=>m.proposed);
-    let html = `
-    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-    <head><meta charset="utf-8"><title>Statistical Comparison Report</title>
-    <style>
-      body{font-family:'Times New Roman', Times, serif; font-size:11pt;}
-      h1{font-size:18pt;} h2{font-size:14pt; margin-top:24pt;}
-      table{border-collapse:collapse; width:100%; margin-top:8pt;}
-      th,td{border:1px solid #999; padding:4pt 8pt; font-size:10pt; text-align:right;}
-      th{font-weight:700;}
-      td:first-child, th:first-child{text-align:left;}
-      .meta{color:#555; font-size:10pt;}
-    </style></head><body>
-    <h1>Statistical Comparison Report</h1>
-    <p class="meta">Metric: ${escapeHtml(metricTitle())} (${directionText()}) &nbsp;|&nbsp; Proposed model: ${escapeHtml(proposed.name)} &nbsp;|&nbsp; Runs per model: ${N} &nbsp;|&nbsp; Decimal places: ${decimals}</p>
+  function renderWilcoxon(){
+    const table = document.getElementById('wilcoxonTable');
+    const thead = '<thead><tr>' + wilcoxonHeaderCols().map(h=>`<th>${escapeHtml(h)}</th>`).join('') + '</tr></thead>';
+    const rows = statsRows.map(r=>{
+      const cells = wilcoxonRowCells(r);
+      return '<tr>' + cells.map((c,i)=>{
+        if(i === 3 && c === 'No') return `<td class="sig-no">${c}</td>`;
+        if(i === cells.length-1) return `<td class="${r.wilSignificant ? 'sig-yes' : 'sig-no'}">${c}</td>`;
+        return `<td>${escapeHtml(c)}</td>`;
+      }).join('') + '</tr>';
+    }).join('');
+    table.innerHTML = thead + '<tbody>' + rows + '</tbody>';
+    const minExact = Math.pow(2, 1 - N);
+    document.getElementById('wilcoxonNote').textContent =
+      `Shapiro–Wilk tests whether the paired differences look normally distributed — a "No" means the t-test's normality ` +
+      `assumption is doubtful, so rely on the Wilcoxon signed-rank row instead. Wilcoxon p-values use the same ` +
+      `${CORRECTIONS[correctionMethod]} correction and α = ${alphaLevel}. With ${N} runs the smallest possible exact ` +
+      `Wilcoxon p-value is ${fmtP(minExact)}, so it can stay above a strict α even for a very large effect.`;
+  }
 
-    <h2>${metricKey === 'accuracy' ? 'Reported Mean Accuracies' : `Reported Mean ${escapeHtml(M().label)}`}</h2>
-    <table><tr><th>Model</th><th>${metricKey === 'accuracy' ? `Mean Accuracy (${M().rangeTag})` : `Mean ${escapeHtml(M().label)}`}</th><th>Standard Deviation</th></tr>
-    ${models.map(m=>`<tr><td>${escapeHtml(m.name)}${m.proposed?' (Proposed)':''}</td><td>${m.mean.toFixed(decimals)}</td><td>${m.sd.toFixed(decimals)}</td></tr>`).join('')}
-    </table>
+  function renderFriedman(){
+    const block = document.getElementById('friedmanBlock');
+    const fr = friedmanResult;
+    if(!fr){
+      block.innerHTML = '<p class="mean-note">Needs at least 3 models — with 2 models the paired tests above already cover the comparison.</p>';
+      return;
+    }
+    const lines = friedmanSummaryLines();
+    const order = rankOrder();
+    const rankRows = order.map(i=>{
+      const cls = i === fr.proposedIdx ? ' class="proposed-row"' : '';
+      const label = escapeHtml(fr.names[i]) + (i === fr.proposedIdx ? ' (Proposed)' : '');
+      return `<tr${cls}><td>${label}</td><td>${fmt(fr.avgRanks[i], 3)}</td></tr>`;
+    }).join('');
+    const propRows = nemenyiProposedRows().map(r=>
+      `<tr><td>${escapeHtml(fr.names[fr.proposedIdx])} vs. ${escapeHtml(r.name)}</td><td>${fmt(r.diff, 3)}</td>` +
+      `<td>${fmtP(r.p)}</td><td class="${r.significant ? 'sig-yes' : 'sig-no'}">${r.significant ? 'YES' : 'NO'}</td></tr>`
+    ).join('');
+    const sigPairs = fr.pairs.filter(x=>x.significant)
+      .map(x=>`${fr.names[x.i]} – ${fr.names[x.j]}`);
+    block.innerHTML = `
+      <div class="fr-stats">${escapeHtml(lines.friedman)}<br>${escapeHtml(lines.iman)}<br>${escapeHtml(lines.nemenyi)}</div>
+      <div class="fullscreen-row" style="justify-content:space-between; align-items:center;">
+        <span class="mean-note" style="margin:0;">Average rank per model (1 = best)</span>
+        <button class="ghost table-copy" data-copy="friedmanRanks">⧉ Copy</button>
+      </div>
+      <div class="table-scroll" style="margin-bottom:16px; display:inline-block; width:auto; max-width:100%;">
+        <table class="ci-se-ref-table"><thead><tr>${FRIEDMAN_RANK_COLS.map(h=>`<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${rankRows}</tbody></table>
+      </div>
+      <div class="fullscreen-row" style="justify-content:space-between; align-items:center;">
+        <span class="mean-note" style="margin:0;">Nemenyi post-hoc (proposed vs. each model)</span>
+        <button class="ghost table-copy" data-copy="nemenyi">⧉ Copy</button>
+      </div>
+      <div class="table-scroll" style="display:inline-block; width:auto; max-width:100%;">
+        <table class="ci-se-ref-table"><thead><tr>${NEMENYI_COLS.map(h=>`<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${propRows}</tbody></table>
+      </div>
+      <p class="mean-note">Significantly different pairs (|Δ rank| &gt; CD = ${fmt(fr.cd, 4)}): ${sigPairs.length ? escapeHtml(sigPairs.join('; ')) : 'none'}.
+      Rank difference is positive when the proposed model ranks better. Nemenyi p-values already account for all k(k−1)/2 pairs, so no further correction is applied.</p>`;
+  }
 
-    <h2>Generated Runs</h2>
-    <table>
-    <tr><th>Run</th>${models.map(m=>`<th>${escapeHtml(m.name)}</th>`).join('')}</tr>
-    ${Array.from({length:N},(_,r)=>`<tr><td>${r+1}</td>${models.map(m=>`<td>${generated[m.name][r].toFixed(decimals)}</td>`).join('')}</tr>`).join('')}
-    <tr><td><b>Mean &plusmn; SD</b></td>${models.map(m=>{
-      const arr = generated[m.name];
-      return `<td><b>${mean(arr).toFixed(decimals)} &plusmn; ${sampleStd(arr).toFixed(decimals)}</b></td>`;
-    }).join('')}</tr>
-    </table>
-
-    <h2>Pairwise Statistical Comparison</h2>
-    <p class="meta">95% CI critical value: t(0.975) = ${tCriticalTwoTailed(N-1,0.05).toFixed(6)} (df = N - 1 = ${N-1}, based on ${N} runs per model).</p>
-    <table style="margin-bottom:14pt;">
-    <tr><th>Method</th><th>Mean</th><th>SD</th><th>95% CI</th><th>Standard Error (used for its CI)</th></tr>
-    ${modelSummaryRows.map(r=>`<tr><td>${escapeHtml(r.name)}${r.isProposed?' (Proposed)':''}</td><td>${fmt(r.mean, decimals)}</td><td>${fmt(r.sd, decimals)}</td><td>[${fmt(r.ciLower, decimals)}, ${fmt(r.ciUpper, decimals)}]</td><td>${fmt(r.se, 6)}</td></tr>`).join('')}
-    </table>
-    <table>
-    <tr><th>Comparison</th><th>Mean Difference</th><th>Standard Deviation</th><th>Standard Error</th><th>Degrees of Freedom</th><th>Paired t-test (t)</th><th>Raw p-value</th><th>Holm Threshold</th><th>Corrected P-value</th><th>Effect Size (Cohen's d)</th><th>Significant</th></tr>
-    ${statsRows.map(r=>`<tr>
-      <td>${escapeHtml(r.comparison)}</td>
-      <td>${fmt(r.meanDiff, decimals)}</td>
-      <td>${fmt(r.sd, 6)}</td>
-      <td>${fmt(r.se, 6)}</td>
-      <td>${r.df}</td>
-      <td>${fmt(r.t,6)}</td>
-      <td>${fmtP(r.rawP)}</td>
-      <td>${fmt(r.holmThreshold,6)}</td>
-      <td>${fmtP(r.correctedP)}</td>
-      <td>${fmt(r.cohend,6)}</td>
-      <td>${r.significant ? 'YES' : 'NO'}</td>
-    </tr>`).join('')}
-    </table>
-    ${M().higherBetter ? '' : `<p class="meta">${escapeHtml(directionNoteText())}</p>`}
-    </body></html>`;
-
-    const blob = new Blob(['\ufeff', html], {type:'application/msword'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `statistical_comparison_report${fileSuffix()}.doc`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  // ---- Copy buttons for the Wilcoxon / Friedman / Nemenyi tables ----
+  // Same inline-styled, Times New Roman format as Copy Results; first column bold.
+  const FRIEDMAN_RANK_COLS = ['Model', 'Average rank (1 = best)'];
+  const NEMENYI_COLS = ['Nemenyi comparison', 'Rank difference', 'p-value', '|Δ rank| > CD'];
+  const COPY_TABLES = {
+    wilcoxon: ()=> statsRows && { header: wilcoxonHeaderCols(), rows: statsRows.map(wilcoxonRowCells) },
+    friedmanRanks: ()=> friedmanResult && {
+      header: FRIEDMAN_RANK_COLS,
+      rows: rankOrder().map(i=>[friedmanResult.names[i] + (i === friedmanResult.proposedIdx ? ' (Proposed)' : ''), fmt(friedmanResult.avgRanks[i], 3)])
+    },
+    nemenyi: ()=> friedmanResult && {
+      header: NEMENYI_COLS,
+      rows: nemenyiProposedRows().map(r=>[`${friedmanResult.names[friedmanResult.proposedIdx]} vs. ${r.name}`,
+        fmt(r.diff, 3), fmtP(r.p), r.significant ? 'YES' : 'NO'])
+    }
+  };
+  function buildCopyTableInlineHTML(header, rows){
+    const cellStyle = "border:1px solid #000;padding:4pt 8pt;font-size:11pt;text-align:center;font-family:'Times New Roman',Times,serif;background-color:#ffffff;color:#000000;";
+    const boldStyle = cellStyle + "font-weight:700;";
+    const thead = '<tr>' + header.map(h=>`<th style="${boldStyle}">${escapeHtml(h)}</th>`).join('') + '</tr>';
+    const body = rows.map(r=>`<tr style="background-color:#ffffff;">` +
+      r.map((c,i)=>`<td style="${i === 0 ? boldStyle : cellStyle}">${escapeHtml(c)}</td>`).join('') + '</tr>').join('');
+    return `<table style="border-collapse:collapse;width:100%;background-color:#ffffff;">${thead}${body}</table>`;
+  }
+  document.addEventListener('click', async e=>{
+    const btn = e.target.closest('.table-copy');
+    if(!btn) return;
+    if(!btn.dataset.label) btn.dataset.label = btn.textContent;  // original text to restore after flashing
+    const restore = btn.dataset.label;
+    const data = COPY_TABLES[btn.dataset.copy]();
+    if(!data || !data.rows.length){ flashButton(btn, 'No results yet', restore); return; }
+    const tableHtml = buildCopyTableInlineHTML(data.header, data.rows);
+    const plainText = [data.header, ...data.rows].map(r=>r.join('\t')).join('\n');
+    try{
+      if(!(navigator.clipboard && window.ClipboardItem)) throw new Error('Clipboard API unavailable');
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/html': new Blob([tableHtml], {type:'text/html'}),
+        'text/plain': new Blob([plainText], {type:'text/plain'})
+      })]);
+      flashButton(btn, '✔ Copied!', restore);
+    } catch(err){
+      try{
+        const tmp = document.createElement('div');
+        tmp.contentEditable = 'true';
+        tmp.style.position = 'fixed';
+        tmp.style.left = '-9999px';
+        tmp.style.background = '#ffffff';
+        tmp.innerHTML = tableHtml;
+        document.body.appendChild(tmp);
+        const range = document.createRange();
+        range.selectNodeContents(tmp);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        document.execCommand('copy');
+        sel.removeAllRanges();
+        document.body.removeChild(tmp);
+        flashButton(btn, '✔ Copied!', restore);
+      } catch(err2){
+        flashButton(btn, 'Copy failed', restore);
+      }
+    }
   });
 
-  // ---- Download Word (.doc) - results table only, styled to match the reference document ----
-  document.getElementById('downloadResultsOnly').addEventListener('click', ()=>{
-    const proposed = models.find(m=>m.proposed);
-    let html = `
-    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-    <head><meta charset="utf-8"><title>Statistical Comparison Results</title>
-    <style>
-      body{font-family:'Times New Roman', Times, serif; font-size:11pt; color:#000;}
-      table{border-collapse:collapse; width:100%;}
-      th,td{border:1px solid #000; padding:4pt 8pt; font-size:11pt; text-align:center;}
-      th{font-weight:700;}
-    </style></head><body>
-    ${(metricKey === 'accuracy' && accScale === '100') ? '' : `<p>Metric: ${escapeHtml(metricTitle())} (${directionText()})</p>`}
-    <p>95% CI critical value: t(0.975) = ${tCriticalTwoTailed(N-1,0.05).toFixed(6)} (df = N - 1 = ${N-1}, based on ${N} runs per model).</p>
-    <table style="margin-bottom:14pt;">
-    <tr><th>Method</th><th>Mean</th><th>SD</th><th>95% CI</th><th>Standard Error (used for its CI)</th></tr>
-    ${modelSummaryRows.map(r=>`<tr><td>${escapeHtml(r.name)}${r.isProposed?' (Proposed)':''}</td><td>${fmt(r.mean, decimals)}</td><td>${fmt(r.sd, decimals)}</td><td>[${fmt(r.ciLower, decimals)}, ${fmt(r.ciUpper, decimals)}]</td><td>${fmt(r.se, 6)}</td></tr>`).join('')}
-    </table>
-    <table>
-    <tr>
-      <th>Comparison</th>
-      <th>Mean Difference</th>
-      <th>Standard Deviation</th>
-      <th>Standard Error</th>
-      <th>Degrees of Freedom</th>
-      <th>Paired t-test (t)</th>
-      <th>Raw p-value</th>
-      <th>Holm's Threshold</th>
-      <th>Corrected P-Value</th>
-      <th>Effect Size (Cohen's d)</th>
-      <th>Significant</th>
-    </tr>
-    ${statsRows.map(r=>`<tr>
-      <td><b>${escapeHtml(r.comparison)}</b></td>
-      <td><b>${fmt(r.meanDiff, decimals)}</b></td>
-      <td>${fmt(r.sd, 6)}</td>
-      <td>${fmt(r.se, 6)}</td>
-      <td>${r.df}</td>
-      <td>${fmt(r.t,6)}</td>
-      <td>${fmtP(r.rawP)}</td>
-      <td>${fmt(r.holmThreshold,6)}</td>
-      <td>${fmtP(r.correctedP)}</td>
-      <td>${fmt(r.cohend,6)}</td>
-      <td>${r.significant ? 'YES' : 'NO'}</td>
-    </tr>`).join('')}
-    </table>
-    ${M().higherBetter ? '' : `<p>${escapeHtml(directionNoteText())}</p>`}
-    </body></html>`;
+  // ================= CHARTS (inline SVG, no libraries) =================
+  // Emphasis encoding: the proposed model / significant results wear the
+  // accent; everything else is a neutral gray. Colors are literal hex (not CSS
+  // vars) so PNG export renders exactly what's on screen. Hover tooltips come
+  // from <title> elements; every value is also in the tables above.
+  const CH = {
+    font: '"Segoe UI", Helvetica, Arial, sans-serif',
+    ink: '#1c2b33', inkSoft: '#5a6b73', muted: '#8b979d',
+    grid: '#e6e0d2', axis: '#c9c1ad', accent: '#2f6f62', gray: '#9aa5ab', surface: '#ffffff'
+  };
+  let measureCtx = null;
+  function textWidth(s, size, weight){
+    if(!measureCtx) measureCtx = document.createElement('canvas').getContext('2d');
+    measureCtx.font = `${weight || 400} ${size}px ${CH.font}`;
+    return measureCtx.measureText(String(s)).width;
+  }
+  function truncateText(s, size, maxW, weight){
+    s = String(s);
+    if(textWidth(s, size, weight) <= maxW) return s;
+    while(s.length > 1 && textWidth(s + '…', size, weight) > maxW) s = s.slice(0, -1);
+    return s + '…';
+  }
+  function svgEsc(s){ return escapeHtml(s); }
+  function svgText(x, y, s, o){
+    o = o || {};
+    return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-family='${CH.font}' font-size="${o.size || 12}"` +
+      ` font-weight="${o.weight || 400}" fill="${o.fill || CH.ink}" text-anchor="${o.anchor || 'start'}"` +
+      `${o.baseline ? ` dominant-baseline="${o.baseline}"` : ''}>${svgEsc(s)}</text>`;
+  }
+  function niceTicks(min, max, count){
+    if(!(max > min)){ const pad = Math.abs(min)*0.01 || 1; min -= pad; max += pad; }
+    const raw = (max-min)/Math.max(1, count);
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const norm = raw/mag;
+    const step = (norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10)*mag;
+    const lo = Math.floor(min/step + 1e-9)*step, hi = Math.ceil(max/step - 1e-9)*step;
+    const ticks = [];
+    for(let v=lo; v<=hi + step*1e-6; v+=step) ticks.push(+v.toPrecision(12));
+    const dp = Math.max(0, Math.min(8, -Math.floor(Math.log10(step) + 1e-9)));
+    return { lo, hi, ticks, label: v => (Math.abs(v) < step*1e-9 ? 0 : v).toFixed(dp) };
+  }
+  // Quantile with linear interpolation (R type 7 / numpy default).
+  function quantile(sorted, q){
+    const pos = (sorted.length-1)*q, lo = Math.floor(pos), hi = Math.ceil(pos);
+    return sorted[lo] + (sorted[hi]-sorted[lo])*(pos-lo);
+  }
+  function svgWrap(w, h, body, title){
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${svgEsc(title)}">` +
+      `<rect width="${w}" height="${h}" fill="${CH.surface}"/>${body}</svg>`;
+  }
+  function xAxis(scale, t, x0, x1, yTop, yBottom){
+    let s = '';
+    t.ticks.forEach(v=>{
+      const x = scale(v);
+      s += `<line x1="${x.toFixed(1)}" y1="${yTop}" x2="${x.toFixed(1)}" y2="${yBottom}" stroke="${CH.grid}" stroke-width="1"/>`;
+      s += svgText(x, yBottom + 16, t.label(v), {size:11, fill:CH.inkSoft, anchor:'middle'});
+    });
+    s += `<line x1="${x0}" y1="${yBottom}" x2="${x1}" y2="${yBottom}" stroke="${CH.axis}" stroke-width="1"/>`;
+    return s;
+  }
 
-    const blob = new Blob(['\ufeff', html], {type:'application/msword'});
+  // ---- Box plot of each model's runs (horizontal) ----
+  function buildBoxPlotSVG(){
+    const W = 760, rowH = 40, top = 14, axisH = 44;
+    const names = models.map(m=>m.name);
+    const labels = models.map(m=>m.proposed ? `${m.name} (Proposed)` : m.name);
+    const labelW = Math.min(230, Math.max(...labels.map((l,i)=>textWidth(l, 12, models[i].proposed ? 600 : 400)))) + 14;
+    const x0 = labelW + 10, x1 = W - 24;
+    const all = [].concat(...names.map(n=>generated[n]));
+    const t = niceTicks(Math.min(...all), Math.max(...all), 6);
+    const sx = v => x0 + (v - t.lo)/(t.hi - t.lo)*(x1 - x0);
+    const H = top + rowH*models.length + axisH;
+    const yBottom = top + rowH*models.length;
+    let body = xAxis(sx, t, x0, x1, top, yBottom);
+    models.forEach((m, i)=>{
+      const vals = generated[m.name].slice().sort((a,b)=>a-b);
+      const q1 = quantile(vals, 0.25), med = quantile(vals, 0.5), q3 = quantile(vals, 0.75);
+      const iqr = q3 - q1;
+      const loW = vals.find(v => v >= q1 - 1.5*iqr), hiW = [...vals].reverse().find(v => v <= q3 + 1.5*iqr);
+      const cy = top + rowH*i + rowH/2;
+      const col = m.proposed ? CH.accent : CH.gray;
+      const bh = 16;
+      const tip = `${m.name}: median ${fmt(med, decimals)}, IQR [${fmt(q1, decimals)}, ${fmt(q3, decimals)}], ` +
+        `range ${fmt(vals[0], decimals)} – ${fmt(vals[vals.length-1], decimals)}, mean ${fmt(mean(vals), decimals)}`;
+      body += `<g><title>${svgEsc(tip)}</title>`;
+      body += `<rect x="${x0}" y="${cy - rowH/2}" width="${x1 - x0}" height="${rowH}" fill="transparent"/>`;
+      body += svgText(labelW, cy, truncateText(labels[i], 12, labelW - 14, m.proposed ? 600 : 400),
+        {anchor:'end', baseline:'middle', weight: m.proposed ? 600 : 400});
+      // whiskers
+      body += `<line x1="${sx(loW).toFixed(1)}" y1="${cy}" x2="${sx(q1).toFixed(1)}" y2="${cy}" stroke="${col}" stroke-width="1.5"/>`;
+      body += `<line x1="${sx(q3).toFixed(1)}" y1="${cy}" x2="${sx(hiW).toFixed(1)}" y2="${cy}" stroke="${col}" stroke-width="1.5"/>`;
+      body += `<line x1="${sx(loW).toFixed(1)}" y1="${cy-6}" x2="${sx(loW).toFixed(1)}" y2="${cy+6}" stroke="${col}" stroke-width="1.5"/>`;
+      body += `<line x1="${sx(hiW).toFixed(1)}" y1="${cy-6}" x2="${sx(hiW).toFixed(1)}" y2="${cy+6}" stroke="${col}" stroke-width="1.5"/>`;
+      // box + median
+      const bw = Math.max(1.5, sx(q3) - sx(q1));
+      body += `<rect x="${sx(q1).toFixed(1)}" y="${cy - bh/2}" width="${bw.toFixed(1)}" height="${bh}" rx="3" fill="${col}" fill-opacity="0.16" stroke="${col}" stroke-width="1.5"/>`;
+      body += `<line x1="${sx(med).toFixed(1)}" y1="${cy - bh/2}" x2="${sx(med).toFixed(1)}" y2="${cy + bh/2}" stroke="${m.proposed ? CH.accent : CH.inkSoft}" stroke-width="2.5"/>`;
+      // individual runs (deterministic jitter so redraws don't shift points)
+      generated[m.name].forEach((v, r)=>{
+        const jitter = (((r*9301 + i*49297) % 233280)/233280 - 0.5)*10;
+        const outlier = v < loW || v > hiW;
+        body += `<circle cx="${sx(v).toFixed(1)}" cy="${(cy + jitter).toFixed(1)}" r="${outlier ? 3.5 : 2.5}"` +
+          ` fill="${outlier ? CH.surface : col}" fill-opacity="${outlier ? 1 : 0.55}" stroke="${outlier ? col : 'none'}" stroke-width="1.5"/>`;
+      });
+      body += `</g>`;
+    });
+    body += svgText((x0 + x1)/2, H - 6, meanLabel().replace(/^Mean /, '').replace(/^./, c=>c.toUpperCase()) + ' per run', {size:11, fill:CH.inkSoft, anchor:'middle'});
+    return svgWrap(W, H, body, 'Box plot of generated runs per model');
+  }
+
+  // ---- Forest plot of paired mean differences with 95% CI ----
+  function buildForestSVG(){
+    const W = 760, rowH = 38, top = 34, axisH = 50;
+    const labels = statsRows.map(r=>`vs. ${r.baseline}`);
+    const labelW = Math.min(220, Math.max(...labels.map(l=>textWidth(l, 12)))) + 14;
+    const valTexts = statsRows.map(r=>`${fmt(r.meanDiff, decimals)} [${fmt(r.diffCiLower, decimals)}, ${fmt(r.diffCiUpper, decimals)}]`);
+    const valW = Math.max(...valTexts.map(s=>textWidth(s, 11))) + 16;
+    const x0 = labelW + 10, x1 = W - valW - 10;
+    const lo = Math.min(0, ...statsRows.map(r=>r.diffCiLower)), hi = Math.max(0, ...statsRows.map(r=>r.diffCiUpper));
+    const t = niceTicks(lo, hi, 6);
+    const sx = v => x0 + (v - t.lo)/(t.hi - t.lo)*(x1 - x0);
+    const yBottom = top + rowH*statsRows.length;
+    const H = yBottom + axisH;
+    let body = xAxis(sx, t, x0, x1, top, yBottom);
+    // zero reference line (darker than the grid: it's the "no difference" line)
+    body += `<line x1="${sx(0).toFixed(1)}" y1="${top - 6}" x2="${sx(0).toFixed(1)}" y2="${yBottom}" stroke="${CH.inkSoft}" stroke-width="1"/>`;
+    // legend (two classes → legend always present)
+    const lg = [['Significant', CH.accent], ['Not significant', CH.gray]];
+    let lx = x0;
+    lg.forEach(([txt, col])=>{
+      body += `<circle cx="${lx + 5}" cy="14" r="5" fill="${col}"/>`;
+      body += svgText(lx + 15, 14, txt, {size:11, fill:CH.inkSoft, baseline:'middle'});
+      lx += 30 + textWidth(txt, 11);
+    });
+    body += svgText(lx + 6, 14, `(${correctionPhrase()} p < ${alphaLevel})`, {size:11, fill:CH.muted, baseline:'middle'});
+    statsRows.forEach((r, i)=>{
+      const cy = top + rowH*i + rowH/2;
+      const col = r.significant ? CH.accent : CH.gray;
+      const tip = `${r.comparison}: mean difference ${fmt(r.meanDiff, decimals)}, 95% CI [${fmt(r.diffCiLower, decimals)}, ` +
+        `${fmt(r.diffCiUpper, decimals)}], ${correctionPhrase()} p = ${fmtP(r.correctedP)}`;
+      body += `<g><title>${svgEsc(tip)}</title>`;
+      body += `<rect x="0" y="${cy - rowH/2}" width="${W}" height="${rowH}" fill="transparent"/>`;
+      body += svgText(labelW, cy, truncateText(labels[i], 12, labelW - 14), {anchor:'end', baseline:'middle'});
+      const a = sx(r.diffCiLower), b = sx(r.diffCiUpper);
+      body += `<line x1="${a.toFixed(1)}" y1="${cy}" x2="${b.toFixed(1)}" y2="${cy}" stroke="${col}" stroke-width="2" stroke-linecap="round"/>`;
+      body += `<line x1="${a.toFixed(1)}" y1="${cy-5}" x2="${a.toFixed(1)}" y2="${cy+5}" stroke="${col}" stroke-width="2" stroke-linecap="round"/>`;
+      body += `<line x1="${b.toFixed(1)}" y1="${cy-5}" x2="${b.toFixed(1)}" y2="${cy+5}" stroke="${col}" stroke-width="2" stroke-linecap="round"/>`;
+      body += `<circle cx="${sx(r.meanDiff).toFixed(1)}" cy="${cy}" r="5.5" fill="${col}" stroke="${CH.surface}" stroke-width="2"/>`;
+      body += svgText(W - 8, cy, valTexts[i], {size:11, fill:CH.inkSoft, anchor:'end', baseline:'middle'});
+      body += `</g>`;
+    });
+    // axis title centred; direction hint pinned to the outer edge on the
+    // "better" side so the two never collide (zero often sits at an edge)
+    const betterRight = M().higherBetter;
+    body += svgText((x0 + x1)/2, H - 8, 'Proposed − Baseline', {size:11, fill:CH.muted, anchor:'middle'});
+    body += svgText(betterRight ? x1 : x0, H - 8, betterRight ? 'Proposed better →' : '← Proposed better',
+      {size:11, fill:CH.inkSoft, anchor: betterRight ? 'end' : 'start'});
+    return svgWrap(W, H, body, 'Forest plot of mean differences with 95% confidence intervals');
+  }
+
+  // ---- Critical-difference diagram (Demšar 2006 style) ----
+  function buildCDSVG(){
+    const fr = friedmanResult;
+    const W = 760, k = fr.k;
+    const order = rankOrder();                     // best (lowest rank) first
+    const nLeft = Math.ceil(k/2);
+    const labelOf = i => fr.names[i] + (i === fr.proposedIdx ? ' (Proposed)' : '');
+    const maxLabel = Math.min(210, Math.max(...order.map(i=>textWidth(`${labelOf(i)}  ${fmt(fr.avgRanks[i], 2)}`, 12, 600))));
+    const x0 = maxLabel + 30, x1 = W - maxLabel - 30;
+    const sx = r => x0 + (r - 1)/(k - 1)*(x1 - x0);
+    const axisY = 58;
+    // cliques: maximal runs of rank-sorted models whose spread is ≤ CD
+    const cliques = [];
+    let lastEnd = -1;
+    for(let a=0;a<k;a++){
+      let b = a;
+      while(b+1 < k && fr.avgRanks[order[b+1]] - fr.avgRanks[order[a]] <= fr.cd + 1e-12) b++;
+      if(b > a && b > lastEnd){ cliques.push([a, b]); lastEnd = b; }
+    }
+    const cliqueTop = axisY + 16, cliqueGap = 8;
+    const labelTop = cliqueTop + Math.max(1, cliques.length)*cliqueGap + 18;
+    const rowGap = 22;
+    const H = labelTop + nLeft*rowGap + 8;
+    let body = '';
+    // CD scale bar
+    const cdPx = fr.cd/(k - 1)*(x1 - x0);
+    const cdX = x0;
+    body += `<line x1="${cdX}" y1="14" x2="${(cdX + Math.min(cdPx, x1 - x0)).toFixed(1)}" y2="14" stroke="${CH.ink}" stroke-width="2"/>`;
+    body += `<line x1="${cdX}" y1="9" x2="${cdX}" y2="19" stroke="${CH.ink}" stroke-width="1.5"/>`;
+    body += `<line x1="${(cdX + Math.min(cdPx, x1 - x0)).toFixed(1)}" y1="9" x2="${(cdX + Math.min(cdPx, x1 - x0)).toFixed(1)}" y2="19" stroke="${CH.ink}" stroke-width="1.5"/>`;
+    body += svgText(cdX + Math.min(cdPx, x1 - x0) + 8, 14, `CD = ${fmt(fr.cd, 3)} (α = ${alphaLevel})`, {size:11, fill:CH.inkSoft, baseline:'middle'});
+    // rank axis
+    body += `<line x1="${x0}" y1="${axisY}" x2="${x1}" y2="${axisY}" stroke="${CH.ink}" stroke-width="1.5"/>`;
+    for(let r=1;r<=k;r++){
+      body += `<line x1="${sx(r).toFixed(1)}" y1="${axisY - 6}" x2="${sx(r).toFixed(1)}" y2="${axisY}" stroke="${CH.ink}" stroke-width="1.5"/>`;
+      body += svgText(sx(r), axisY - 11, String(r), {size:11, fill:CH.inkSoft, anchor:'middle'});
+    }
+    body += svgText(x0 - 10, axisY - 11, 'better', {size:10, fill:CH.muted, anchor:'end'});
+    body += svgText(x1 + 10, axisY - 11, 'worse', {size:10, fill:CH.muted});
+    // model leaders + labels
+    order.forEach((idx, pos)=>{
+      const left = pos < nLeft;
+      const row = left ? pos : (k - 1 - pos);
+      const y = labelTop + row*rowGap;
+      const x = sx(fr.avgRanks[idx]);
+      const isP = idx === fr.proposedIdx;
+      const col = isP ? CH.accent : CH.ink;
+      const endX = left ? x0 - 14 : x1 + 14;
+      const tip = `${fr.names[idx]}: average rank ${fmt(fr.avgRanks[idx], 3)}`;
+      body += `<g><title>${svgEsc(tip)}</title>`;
+      body += `<polyline points="${x.toFixed(1)},${axisY} ${x.toFixed(1)},${y} ${endX},${y}" fill="none" stroke="${col}" stroke-width="${isP ? 2 : 1.2}"/>`;
+      body += `<circle cx="${x.toFixed(1)}" cy="${axisY}" r="4" fill="${col}" stroke="${CH.surface}" stroke-width="2"/>`;
+      const label = truncateText(`${labelOf(idx)}  ${fmt(fr.avgRanks[idx], 2)}`, 12, maxLabel + 10, isP ? 600 : 400);
+      body += svgText(left ? endX - 6 : endX + 6, y, label,
+        {anchor: left ? 'end' : 'start', baseline:'middle', weight: isP ? 600 : 400, fill: CH.ink});
+      body += `</g>`;
+    });
+    // clique bars (drawn last so they sit on top of the leader lines)
+    cliques.forEach(([a, b], ci)=>{
+      const y = cliqueTop + ci*cliqueGap;
+      const xa = sx(fr.avgRanks[order[a]]) - 4, xb = sx(fr.avgRanks[order[b]]) + 4;
+      body += `<line x1="${xa.toFixed(1)}" y1="${y}" x2="${xb.toFixed(1)}" y2="${y}" stroke="${CH.inkSoft}" stroke-width="4" stroke-linecap="round"/>`;
+    });
+    return svgWrap(W, H, body, 'Critical difference diagram of average ranks');
+  }
+
+  function renderCharts(){
+    document.getElementById('chartBox').innerHTML = buildBoxPlotSVG();
+    document.getElementById('chartForest').innerHTML = buildForestSVG();
+    // CD diagram needs the Friedman result (≥ 3 models); hidden otherwise.
+    document.getElementById('chartCDCard').style.display = friedmanResult ? '' : 'none';
+    document.getElementById('chartCD').innerHTML = friedmanResult ? buildCDSVG() : '';
+  }
+
+  // ---- chart export: PNG download + copy image (event delegation) ----
+  function svgToPngBlob(svgEl, scale){
+    return new Promise((resolve, reject)=>{
+      const w = +svgEl.getAttribute('width'), h = +svgEl.getAttribute('height');
+      const xml = new XMLSerializer().serializeToString(svgEl);
+      const img = new Image();
+      img.onload = ()=>{
+        const c = document.createElement('canvas');
+        c.width = Math.round(w*scale); c.height = Math.round(h*scale);
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(b => b ? resolve(b) : reject(new Error('PNG encoding failed')), 'image/png');
+      };
+      img.onerror = ()=>reject(new Error('SVG render failed'));
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+    });
+  }
+  function flashButton(btn, text, restore){
+    btn.textContent = text;
+    setTimeout(()=>{ btn.textContent = restore; }, 1800);
+  }
+  document.addEventListener('click', async e=>{
+    const btn = e.target.closest('.chart-png, .chart-copy');
+    if(!btn) return;
+    const holder = document.getElementById(btn.dataset.chart);
+    const svg = holder && holder.querySelector('svg');
+    const label = btn.classList.contains('chart-png') ? '⇩ PNG' : '⧉ Copy image';
+    if(!svg){ flashButton(btn, 'No chart yet', label); return; }
+    try{
+      const blob = await svgToPngBlob(svg, 2);
+      if(btn.classList.contains('chart-png')){
+        downloadBlob(blob, `${btn.dataset.name || 'chart'}${fileSuffix()}.png`);
+        flashButton(btn, '✔ Saved', label);
+      } else {
+        if(!(navigator.clipboard && window.ClipboardItem)) throw new Error('Clipboard API unavailable');
+        await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+        flashButton(btn, '✔ Copied!', label);
+      }
+    } catch(err){
+      flashButton(btn, btn.classList.contains('chart-png') ? 'Save failed' : 'Copy failed — use PNG', label);
+    }
+  });
+  function downloadBlob(blob, filename){
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `statistical_comparison_results${fileSuffix()}.doc`;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  }
+
+  // ================= RESULTS PARAGRAPH =================
+  function pText(p){
+    if(p < 0.001) return 'p < 0.001';
+    return `p = ${Number(p.toPrecision(3))}`;
+  }
+  function ordinal(n){
+    const s = ['th','st','nd','rd'], v = n % 100;
+    return n + (s[(v-20)%10] || s[v] || s[0]);
+  }
+  function buildResultsParagraph(){
+    const m = M();
+    const noun = m.noun;
+    const prop = modelSummaryRows.find(r=>r.isProposed);
+    const corr = correctionPhrase();
+    const better = m.higherBetter ? 'higher' : 'lower', worse = m.higherBetter ? 'lower' : 'higher';
+    const fv = v => fmt(v, decimals);
+    const out = [];
+    out.push(`Over ${N} runs, the proposed model (${prop.name}) achieved a mean ${noun} of ${fv(prop.mean)} ± ${fv(prop.sd)} (mean ± SD).`);
+    statsRows.forEach(r=>{
+      const base = modelSummaryRows.find(s=>s.name === r.baseline);
+      const improved = m.higherBetter ? r.meanDiff > 0 : r.meanDiff < 0;
+      const stat = `paired t-test, t(${r.df}) = ${fmt(r.t, 2)}, ${corr} ${pText(r.correctedP)}, Cohen's d = ${fmt(r.cohend, 2)}`;
+      let s = r.significant
+        ? `Compared with ${r.baseline} (${fv(base.mean)} ± ${fv(base.sd)}), the proposed model achieved significantly ${improved ? better : worse} ${noun} (${stat}).`
+        : `The difference from ${r.baseline} (${fv(base.mean)} ± ${fv(base.sd)}) was not statistically significant (${stat}).`;
+      const wil = `W = ${r.wil.W}, ${corr} ${pText(r.wilCorrected)}`;
+      if(r.wilSignificant === r.significant){
+        s += ` The Wilcoxon signed-rank test ${r.significant ? 'confirmed this' : 'agreed'} (${wil}).`;
+      } else {
+        s += ` The Wilcoxon signed-rank test reached a different conclusion (${wil})`;
+        s += (!isNaN(r.sw.p) && r.sw.p < 0.05)
+          ? `; since the paired differences were not normally distributed (Shapiro–Wilk ${pText(r.sw.p)}), the Wilcoxon result is the more reliable one.`
+          : '.';
+      }
+      out.push(s);
+    });
+    const fr = friedmanResult;
+    if(fr){
+      const order = rankOrder();
+      const pos = order.indexOf(fr.proposedIdx) + 1;
+      let s = `Across all ${fr.k} models, a Friedman test ${fr.significant ? 'showed' : 'did not show'} a significant difference in ${noun} ranks ` +
+        `(χ²(${fr.df}) = ${fmt(fr.chi2, 2)}, ${pText(fr.p)}). The proposed model ranked ${ordinal(pos)} of ${fr.k} (average rank ${fmt(fr.avgRanks[fr.proposedIdx], 2)})`;
+      const nm = nemenyiProposedRows();
+      const sigOnes = nm.filter(x=>x.significant).map(x=>x.name);
+      s += sigOnes.length
+        ? `, and the Nemenyi post-hoc test (CD = ${fmt(fr.cd, 2)}, α = ${alphaLevel}) found it significantly different from ${sigOnes.join(', ')}.`
+        : `; the Nemenyi post-hoc test (CD = ${fmt(fr.cd, 2)}, α = ${alphaLevel}) found no significant rank difference between it and the other models.`;
+      out.push(s);
+    }
+    if(seedUsed) out.push(`(Random seed: ${seedUsed}.)`);
+    return out.join('\n\n');
+  }
+  document.getElementById('copyParagraph').addEventListener('click', async ()=>{
+    const btn = document.getElementById('copyParagraph');
+    if(!statsRows){ flashButton(btn, 'No results yet', '⧉ Copy'); return; }
+    await copyPlainText(buildResultsParagraph(), btn, '⧉ Copy');
+  });
+  async function copyPlainText(text, btn, restore){
+    try{
+      await navigator.clipboard.writeText(text);
+      flashButton(btn, '✔ Copied!', restore);
+    } catch(err){
+      try{
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        flashButton(btn, '✔ Copied!', restore);
+      } catch(err2){ flashButton(btn, 'Copy failed', restore); }
+    }
+  }
+
+  // ================= WORD (.docx) EXPORT =================
+  // Real Office Open XML documents, built in-page with no libraries: each
+  // report is first described as a list of blocks (h1 / h2 / p / table), then
+  // blocksToDocx() writes the WordprocessingML parts and zips them (stored,
+  // no compression) into a .docx that Word opens without a format warning.
+
+  // -- minimal ZIP writer (stored entries, UTF-8 names, CRC-32) --
+  const CRC_TABLE = (()=>{
+    const t = new Uint32Array(256);
+    for(let n=0;n<256;n++){ let c = n; for(let k=0;k<8;k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+    return t;
+  })();
+  function crc32(bytes){
+    let c = 0xFFFFFFFF;
+    for(let i=0;i<bytes.length;i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function zipStored(files){  // files: [{name, text}] → Blob
+    const enc = new TextEncoder();
+    const now = new Date();
+    const dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+    const dosDate = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+    const parts = [], central = [];
+    let offset = 0;
+    files.forEach(f=>{
+      const name = enc.encode(f.name), data = enc.encode(f.text), crc = crc32(data);
+      const local = new DataView(new ArrayBuffer(30));
+      local.setUint32(0, 0x04034b50, true); local.setUint16(4, 20, true); local.setUint16(6, 0x0800, true);
+      local.setUint16(8, 0, true); local.setUint16(10, dosTime, true); local.setUint16(12, dosDate, true);
+      local.setUint32(14, crc, true); local.setUint32(18, data.length, true); local.setUint32(22, data.length, true);
+      local.setUint16(26, name.length, true); local.setUint16(28, 0, true);
+      parts.push(local, name, data);
+      const cen = new DataView(new ArrayBuffer(46));
+      cen.setUint32(0, 0x02014b50, true); cen.setUint16(4, 20, true); cen.setUint16(6, 20, true); cen.setUint16(8, 0x0800, true);
+      cen.setUint16(10, 0, true); cen.setUint16(12, dosTime, true); cen.setUint16(14, dosDate, true);
+      cen.setUint32(16, crc, true); cen.setUint32(20, data.length, true); cen.setUint32(24, data.length, true);
+      cen.setUint16(28, name.length, true); cen.setUint16(30, 0, true); cen.setUint16(32, 0, true);
+      cen.setUint16(34, 0, true); cen.setUint16(36, 0, true); cen.setUint32(38, 0, true); cen.setUint32(42, offset, true);
+      central.push(cen, name);
+      offset += 30 + name.length + data.length;
+    });
+    const cenSize = central.reduce((s, p)=>s + p.byteLength, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+    end.setUint32(12, cenSize, true); end.setUint32(16, offset, true);
+    return new Blob([...parts, ...central, end], {type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+  }
+
+  // -- WordprocessingML --
+  function xmlEsc(s){
+    return String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+      .replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+  // Text runs; "\n" inside the text becomes a line break.
+  function wRuns(text, rPr){
+    const pr = rPr ? `<w:rPr>${rPr}</w:rPr>` : '';
+    return String(text).split('\n').map((line, i)=>
+      `<w:r>${pr}${i ? '<w:br/>' : ''}<w:t xml:space="preserve">${xmlEsc(line)}</w:t></w:r>`).join('');
+  }
+  // look: {border, size (half-points), align: 'numeric' | 'center', metaColor}
+  function wTable(t, look){
+    const PAGE_TWIPS = 16838 - 2*1134;  // A4 landscape minus margins
+    const cols = t.header.length;
+    const colW = Math.floor(PAGE_TWIPS / cols);
+    const edge = side => `<w:${side} w:val="single" w:sz="4" w:space="0" w:color="${look.border}"/>`;
+    const cell = (text, colIdx, bold) => {
+      const jc = look.align === 'center' ? 'center' : (colIdx === 0 ? 'left' : 'right');
+      const rPr = (bold ? '<w:b/><w:bCs/>' : '') + `<w:sz w:val="${look.size}"/><w:szCs w:val="${look.size}"/>`;
+      return `<w:tc><w:tcPr><w:tcW w:w="${colW}" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>` +
+        `<w:p><w:pPr><w:spacing w:before="0" w:after="0"/><w:jc w:val="${jc}"/></w:pPr>${wRuns(text, rPr)}</w:p></w:tc>`;
+    };
+    const head = `<w:tr><w:trPr><w:tblHeader/></w:trPr>${t.header.map((h,i)=>cell(h, i, true)).join('')}</w:tr>`;
+    const body = t.rows.map((r, ri)=>{
+      const lastBold = t.boldLastRow && ri === t.rows.length - 1;
+      return `<w:tr><w:trPr><w:cantSplit/></w:trPr>${r.map((c,i)=>cell(c, i, lastBold || i < (t.boldCols || 0))).join('')}</w:tr>`;
+    }).join('');
+    return `<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/>` +
+      `<w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(edge).join('')}</w:tblBorders>` +
+      `<w:tblLayout w:type="autofit"/><w:tblCellMar><w:top w:w="60" w:type="dxa"/><w:left w:w="110" w:type="dxa"/>` +
+      `<w:bottom w:w="60" w:type="dxa"/><w:right w:w="110" w:type="dxa"/></w:tblCellMar></w:tblPr>` +
+      `<w:tblGrid>${Array(cols).fill(`<w:gridCol w:w="${colW}"/>`).join('')}</w:tblGrid>${head}${body}</w:tbl>` +
+      `<w:p><w:pPr><w:spacing w:before="0" w:after="120"/></w:pPr></w:p>`;  // spacer: keeps adjacent tables apart
+  }
+  function blocksToDocx(blocks, look){
+    const body = blocks.map(b=>{
+      if(b.type === 'h1' || b.type === 'h2'){
+        return `<w:p><w:pPr><w:pStyle w:val="Heading${b.type === 'h1' ? 1 : 2}"/></w:pPr>${wRuns(b.text)}</w:p>`;
+      }
+      if(b.type === 'table') return wTable(b, look);
+      const rPr = b.meta && look.metaColor ? `<w:color w:val="${look.metaColor}"/><w:sz w:val="20"/><w:szCs w:val="20"/>` : '';
+      return `<w:p>${wRuns(b.text, rPr)}</w:p>`;
+    }).join('');
+    const W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+    const XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+    const font = 'Times New Roman';
+    const document = `${XML}<w:document ${W}><w:body>${body}` +
+      `<w:sectPr><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/>` +
+      `<w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr>` +
+      `</w:body></w:document>`;
+    const styles = `${XML}<w:styles ${W}>` +
+      `<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="${font}" w:hAnsi="${font}" w:eastAsia="${font}" w:cs="${font}"/>` +
+      `<w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="en-US"/></w:rPr></w:rPrDefault>` +
+      `<w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>` +
+      `<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>` +
+      `<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/>` +
+      `<w:pPr><w:keepNext/><w:spacing w:before="120" w:after="160"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:bCs/><w:sz w:val="36"/><w:szCs w:val="36"/></w:rPr></w:style>` +
+      `<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/>` +
+      `<w:pPr><w:keepNext/><w:spacing w:before="360" w:after="120"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:bCs/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr></w:style>` +
+      `<w:style w:type="table" w:default="1" w:styleId="TableNormal"><w:name w:val="Normal Table"/><w:uiPriority w:val="99"/><w:semiHidden/>` +
+      `<w:tblPr><w:tblInd w:w="0" w:type="dxa"/><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="108" w:type="dxa"/>` +
+      `<w:bottom w:w="0" w:type="dxa"/><w:right w:w="108" w:type="dxa"/></w:tblCellMar></w:tblPr></w:style></w:styles>`;
+    const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+    return zipStored([
+      { name: '[Content_Types].xml', text: `${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+        `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+        `<Default Extension="xml" ContentType="application/xml"/>` +
+        `<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>` +
+        `<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>` },
+      { name: '_rels/.rels', text: `${XML}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+        `<Relationship Id="rId1" Type="${REL}/officeDocument" Target="word/document.xml"/></Relationships>` },
+      { name: 'word/_rels/document.xml.rels', text: `${XML}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+        `<Relationship Id="rId1" Type="${REL}/styles" Target="styles.xml"/></Relationships>` },
+      { name: 'word/document.xml', text: document },
+      { name: 'word/styles.xml', text: styles }
+    ]);
+  }
+
+  // -- report contents (same sections as the previous .doc reports) --
+  const MODEL_SUMMARY_COLS = ['Method', 'Mean', 'SD', '95% CI', 'Standard Error (used for its CI)'];
+  function docTable(header, rows, opts){ return Object.assign({ type:'table', header, rows }, opts); }
+  function modelSummaryTable(){
+    return docTable(MODEL_SUMMARY_COLS, modelSummaryRows.map(r=>[r.name + (r.isProposed ? ' (Proposed)' : ''),
+      fmt(r.mean, decimals), fmt(r.sd, decimals), `[${fmt(r.ciLower, decimals)}, ${fmt(r.ciUpper, decimals)}]`, fmt(r.se, 6)]));
+  }
+  function tCritLine(){
+    return `95% CI critical value: t(0.975) = ${tCriticalTwoTailed(N-1, 0.05).toFixed(6)} (df = N - 1 = ${N-1}, based on ${N} runs per model).`;
+  }
+  // Friedman / Nemenyi section for the Full Report (same tables as the on-screen Copy buttons).
+  function friedmanReportBlocks(){
+    if(!friedmanResult) return [];
+    const lines = friedmanSummaryLines();
+    const ranks = COPY_TABLES.friedmanRanks(), nem = COPY_TABLES.nemenyi();
+    return [
+      { type:'h2', text:'Friedman Test + Nemenyi Post-hoc (all models)' },
+      { type:'p', meta:true, text:[lines.friedman, lines.iman, lines.nemenyi].join('\n') },
+      docTable(ranks.header, ranks.rows),
+      docTable(nem.header, nem.rows)
+    ];
+  }
+  function fullReportBlocks(){
+    const proposed = models.find(m=>m.proposed);
+    const b = [];
+    b.push({ type:'h1', text:'Statistical Comparison Report' });
+    b.push({ type:'p', meta:true, text:[`Metric: ${metricTitle()} (${directionText()})`, `Proposed model: ${proposed.name}`,
+      `Runs per model: ${N}`, `Decimal places: ${decimals}`,
+      runsImported ? `Runs: imported (${N} per model)` : `Random seed: ${seedUsed || 'none'}`,
+      `Correction: ${CORRECTIONS[correctionMethod]}`, `α = ${alphaLevel}`].join('  |  ') });
+    b.push({ type:'h2', text: metricKey === 'accuracy' ? 'Reported Mean Accuracies' : `Reported Mean ${M().label}` });
+    b.push(docTable(['Model', meanColTitle(), 'Standard Deviation'],
+      models.map(m=>[m.name + (m.proposed ? ' (Proposed)' : ''), m.mean.toFixed(decimals), m.sd.toFixed(decimals)])));
+    b.push({ type:'h2', text: runsImported ? 'Imported Runs' : 'Generated Runs' });
+    b.push(docTable(['Run', ...models.map(m=>m.name)], [
+      ...Array.from({length:N}, (_,r)=>[String(r+1), ...models.map(m=>generated[m.name][r].toFixed(decimals))]),
+      ['Mean ± SD', ...models.map(m=>`${mean(generated[m.name]).toFixed(decimals)} ± ${sampleStd(generated[m.name]).toFixed(decimals)}`)]
+    ], { boldLastRow:true }));
+    b.push({ type:'h2', text:'Pairwise Statistical Comparison' });
+    b.push({ type:'p', meta:true, text: tCritLine() });
+    b.push(modelSummaryTable());
+    b.push(docTable(resultsHeaderCols('screen'), statsRows.map(resultsRowCells)));
+    b.push({ type:'p', meta:true, text: sigNoteText() });
+    if(!M().higherBetter) b.push({ type:'p', meta:true, text: directionNoteText() });
+    b.push({ type:'h2', text:'Normality Check & Wilcoxon Signed-Rank Test' });
+    b.push(docTable(wilcoxonHeaderCols(), statsRows.map(wilcoxonRowCells)));
+    b.push(...friedmanReportBlocks());
+    b.push({ type:'h2', text:'Results Paragraph' });
+    buildResultsParagraph().split('\n\n').forEach(p=>b.push({ type:'p', text:p }));
+    return b;
+  }
+  function resultsOnlyBlocks(){
+    const b = [];
+    if(!(metricKey === 'accuracy' && accScale === '100')) b.push({ type:'p', text:`Metric: ${metricTitle()} (${directionText()})` });
+    b.push({ type:'p', text: tCritLine() });
+    b.push(modelSummaryTable());
+    b.push(docTable(resultsHeaderCols('doc'), statsRows.map(resultsRowCells), { boldCols:2 }));
+    if(!M().higherBetter) b.push({ type:'p', text: directionNoteText() });
+    return b;
+  }
+  // Full report: grey rules, numbers right-aligned; Results only: black rules, centred.
+  const FULL_LOOK = { border:'999999', size:20, align:'numeric', metaColor:'555555' };
+  const RESULTS_LOOK = { border:'000000', size:22, align:'center' };
+
+  document.getElementById('downloadWord').addEventListener('click', ()=>{
+    const btn = document.getElementById('downloadWord');
+    if(!statsRows){ flashButton(btn, 'No results yet', '⇩ Download Full Report (.docx)'); return; }
+    downloadBlob(blocksToDocx(fullReportBlocks(), FULL_LOOK), `statistical_comparison_report${fileSuffix()}.docx`);
+  });
+  document.getElementById('downloadResultsOnly').addEventListener('click', ()=>{
+    const btn = document.getElementById('downloadResultsOnly');
+    if(!statsRows){ flashButton(btn, 'No results yet', '⇩ Download Results Only (.docx)'); return; }
+    downloadBlob(blocksToDocx(resultsOnlyBlocks(), RESULTS_LOOK), `statistical_comparison_results${fileSuffix()}.docx`);
   });
 
   // ---- Copy Results (clipboard) ----
@@ -1678,34 +3458,16 @@ CrossViT&#9;92.18 ± 0.28"></textarea>
     const cellStyle = "border:1px solid #000;padding:4pt 8pt;font-size:11pt;text-align:center;font-family:'Times New Roman',Times,serif;background-color:#ffffff;color:#000000;";
     const thStyle = cellStyle + "font-weight:700;";
     const boldTdStyle = cellStyle + "font-weight:700;";
-    const headerCols = ['Comparison','Mean Difference','Standard Deviation','Standard Error',
-      'Degrees of Freedom','Paired t-test (t)','Raw p-value',"Holm's Threshold",'Corrected P-Value',"Effect Size (Cohen's d)",'Significant'];
-    const thead = '<tr>' + headerCols.map(h=>`<th style="${thStyle}">${h}</th>`).join('') + '</tr>';
-    const rows = statsRows.map(r=>`<tr style="background-color:#ffffff;">
-      <td style="${boldTdStyle}">${escapeHtml(r.comparison)}</td>
-      <td style="${boldTdStyle}">${fmt(r.meanDiff, decimals)}</td>
-      <td style="${cellStyle}">${fmt(r.sd, 6)}</td>
-      <td style="${cellStyle}">${fmt(r.se, 6)}</td>
-      <td style="${cellStyle}">${r.df}</td>
-      <td style="${cellStyle}">${fmt(r.t,6)}</td>
-      <td style="${cellStyle}">${fmtP(r.rawP)}</td>
-      <td style="${cellStyle}">${fmt(r.holmThreshold,6)}</td>
-      <td style="${cellStyle}">${fmtP(r.correctedP)}</td>
-      <td style="${cellStyle}">${fmt(r.cohend,6)}</td>
-      <td style="${cellStyle}">${r.significant ? 'YES' : 'NO'}</td>
-    </tr>`).join('');
+    const thead = '<tr>' + resultsHeaderCols('doc').map(h=>`<th style="${thStyle}">${h}</th>`).join('') + '</tr>';
+    const rows = statsRows.map(r=>`<tr style="background-color:#ffffff;">` +
+      resultsRowCells(r).map((c,i)=>`<td style="${i < 2 ? boldTdStyle : cellStyle}">${escapeHtml(c)}</td>`).join('') +
+      `</tr>`).join('');
     return `<table style="border-collapse:collapse;width:100%;background-color:#ffffff;">${thead}${rows}</table>`;
   }
 
   function buildResultsTablePlainText(){
-    const headerCols = ['Comparison','Mean Difference','Standard Deviation','Standard Error',
-      'Degrees of Freedom','Paired t-test (t)','Raw p-value',"Holm's Threshold",'Corrected P-Value',"Effect Size (Cohen's d)",'Significant'];
-    const lines = statsRows.map(r=>[
-      r.comparison, fmt(r.meanDiff, decimals), fmt(r.sd, 6),
-      fmt(r.se, 6), r.df, fmt(r.t,6), fmtP(r.rawP), fmt(r.holmThreshold,6), fmtP(r.correctedP), fmt(r.cohend,6),
-      r.significant ? 'YES' : 'NO'
-    ].join('\t'));
-    return headerCols.join('\t') + '\n' + lines.join('\n');
+    const lines = statsRows.map(r=>resultsRowCells(r).join('\t'));
+    return resultsHeaderCols('doc').join('\t') + '\n' + lines.join('\n');
   }
 
   // Same inline-styled, white-background, Times New Roman format as the
